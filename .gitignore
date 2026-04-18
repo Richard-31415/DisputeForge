@@ -1,0 +1,67 @@
+# Env
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Node (if any frontend)
+node_modules/
+.next/
+dist/
+build/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Agent runtime
+.agent_snaps/
+logs/traces/*
+logs/eval/*
+!logs/traces/.gitkeep
+!logs/eval/.gitkeep
+eval/runs/*
+!eval/runs/.gitkeep
+scratch/*
+!scratch/.gitkeep
+
+# Data (usually too big or sensitive)
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Vector DB
+chroma_db/
+*.chromadb
+
+# Langfuse / observability dumps
+langfuse_data/
+
+# OS
+Thumbs.db
+
+# Claude Code local settings (but keep agents, commands, skills shared)
+.claude/settings.local.json
+.claude/todos/
