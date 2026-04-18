@@ -1,0 +1,19 @@
+{
+  "case_id": "card_not_present_small",
+  "action_taken": "auto_refund",
+  "requires_hitl": false,
+  "final_response": {
+    "customer_message": "We have issued a provisional credit for the disputed amount while we open an investigation. You will hear back within 10 business days.",
+    "action": "auto_refund",
+    "provisional_credit_amount": 32.0,
+    "investigation_timeline_days": 10,
+    "reasoning": "canonical auto_refund template"
+  },
+  "trace_role_order": [
+    "communicator",
+    "planner",
+    "evaluator",
+    "harness.snapshot",
+    "explainer"
+  ]
+}

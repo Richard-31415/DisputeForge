@@ -1,0 +1,17 @@
+{
+  "case_id": "adversarial",
+  "action_taken": "human_review",
+  "requires_hitl": true,
+  "hitl_reason_prefix": "adversarial_marker:",
+  "final_response": {
+    "customer_message": "Thank you for reporting this. Your dispute has been routed to a specialist for review. You will hear back within 45 business days.",
+    "action": "human_review",
+    "provisional_credit_amount": null,
+    "investigation_timeline_days": 45,
+    "reasoning": "adversarial_marker short-circuit"
+  },
+  "trace_role_order": [
+    "communicator",
+    "hitl"
+  ]
+}

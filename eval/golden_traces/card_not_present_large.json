@@ -1,0 +1,19 @@
+{
+  "case_id": "card_not_present_large",
+  "action_taken": "human_review",
+  "requires_hitl": true,
+  "final_response": {
+    "customer_message": "Thank you for reporting this. Your dispute has been routed to a specialist for review. You will hear back within 45 business days.",
+    "action": "human_review",
+    "provisional_credit_amount": null,
+    "investigation_timeline_days": 45,
+    "reasoning": "amount $680.00 exceeds auto-action HITL threshold"
+  },
+  "trace_role_order": [
+    "communicator",
+    "planner",
+    "evaluator",
+    "harness.snapshot",
+    "explainer"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "case_id": "recognized_after_all",
+  "action_taken": "deny",
+  "requires_hitl": false,
+  "final_response": {
+    "customer_message": "Thanks for reaching out. After reviewing the transaction details you provided, this charge does not qualify as a dispute under our policy.",
+    "action": "deny",
+    "provisional_credit_amount": null,
+    "investigation_timeline_days": null,
+    "reasoning": "canonical deny template \u2014 dispute does not qualify"
+  },
+  "trace_role_order": [
+    "communicator",
+    "planner",
+    "evaluator",
+    "harness.snapshot",
+    "explainer"
+  ]
+}

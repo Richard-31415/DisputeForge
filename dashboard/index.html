@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>DisputeForge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<script src="data.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.163.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.163.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body data-mode="live">
+
+<!-- ambient backdrop -->
+<div class="bg-gradient"></div>
+<div class="bg-grid"></div>
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+
+<!-- persistent 3D canvas -->
+<canvas id="three-canvas"></canvas>
+<div class="scene-vignette"></div>
+
+<!-- top bar -->
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark"></div>
+    <div class="brand-text">
+      <div class="brand-name">DisputeForge</div>
+      <div class="brand-sub">Reg E dispute agent</div>
+    </div>
+  </div>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab tab-primary"  data-mode="live" aria-selected="true">Live Run</button>
+    <button class="tab tab-primary"  data-mode="eval">Eval</button>
+    <button class="tab tab-primary"  data-mode="rollback">Rollback</button>
+    <span class="tabs-sep"></span>
+    <button class="tab tab-secondary" data-mode="architecture">Architecture</button>
+    <button class="tab tab-secondary" data-mode="trace">Trace</button>
+    <button class="tab tab-secondary" data-mode="harness">Harness</button>
+  </nav>
+
+  <div class="topbar-right">
+    <div class="pill pill-status" id="server-pill">
+      <span class="pill-dot"></span>
+      <span id="server-pill-text">…</span>
+    </div>
+  </div>
+</header>
+
+<main class="shell">
+
+  <!-- ====== LIVE RUN ====== -->
+  <section class="mode mode-live" data-mode="live">
+    <div class="panel glass">
+      <header class="panel-head">
+        <div class="eyebrow">live agent · 4-role</div>
+        <h1 class="title">Submit a dispute.</h1>
+        <p class="sub">
+          Type anything. The real agent runs. Watch the packet fly through the scene as each role completes.
+        </p>
+      </header>
+
+      <div class="form">
+        <div class="presets">
+          <button class="preset" data-preset="small_fraud">Small fraud $24</button>
+          <button class="preset" data-preset="big_fraud">Big fraud $842</button>
+          <button class="preset" data-preset="remorse">Buyer's remorse</button>
+          <button class="preset" data-preset="injection">Prompt injection</button>
+        </div>
+
+        <label class="field">
+          <div class="field-label">User message</div>
+          <textarea id="df-message" rows="3" placeholder="I did not make this charge — please refund it."></textarea>
+        </label>
+
+        <div class="field-row">
+          <label class="field">
+            <div class="field-label">Amount ($)</div>
+            <input id="df-amount" type="number" step="0.01" min="0.01" value="24.99" />
+          </label>
+          <label class="field">
+            <div class="field-label">Merchant</div>
+            <input id="df-merchant" type="text" value="SketchyGadgets" />
+          </label>
+        </div>
+
+        <button class="btn btn-primary btn-run" id="df-submit">
+          <span class="btn-label">Run agent</span>
+          <span class="btn-chevron">›</span>
+        </button>
+      </div>
+
+      <!-- live run progress (hidden until submit) -->
+      <div class="run-progress" id="run-progress" hidden>
+        <div class="run-progress-head">
+          <span class="run-phase" id="run-phase">starting…</span>
+          <span class="run-timer mono" id="run-timer">0.0s</span>
+        </div>
+        <ol class="run-steps" id="run-steps">
+          <li class="run-step" data-role="communicator">
+            <span class="run-step-dot"></span>
+            <span class="run-step-name">Communicator</span>
+            <span class="run-step-detail"></span>
+          </li>
+          <li class="run-step" data-role="planner">
+            <span class="run-step-dot"></span>
+            <span class="run-step-name">Planner</span>
+            <span class="run-step-detail"></span>
+          </li>
+          <li class="run-step" data-role="evaluator">
+            <span class="run-step-dot"></span>
+            <span class="run-step-name">Evaluator</span>
+            <span class="run-step-detail"></span>
+          </li>
+          <li class="run-step" data-role="explainer">
+            <span class="run-step-dot"></span>
+            <span class="run-step-name">Explainer</span>
+            <span class="run-step-detail"></span>
+          </li>
+          <li class="run-step" data-role="hitl" hidden>
+            <span class="run-step-dot"></span>
+            <span class="run-step-name">HITL</span>
+            <span class="run-step-detail"></span>
+          </li>
+        </ol>
+      </div>
+
+      <!-- final result -->
+      <div class="run-result" id="run-result" hidden>
+        <div class="run-result-head">
+          <span class="chip" id="run-result-chip">—</span>
+          <span class="run-result-meta mono" id="run-result-meta">—</span>
+        </div>
+        <div class="run-result-label">Customer response</div>
+        <div class="run-result-message" id="run-result-message">—</div>
+        <button class="btn btn-ghost btn-sm" id="run-reset">↺ new dispute</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== EVAL ====== -->
+  <section class="mode mode-eval" data-mode="eval">
+    <div class="panel glass">
+      <header class="panel-head">
+        <div class="eyebrow">deployment gate</div>
+        <h1 class="title">
+          <span id="eval-accuracy" class="title-accent">—</span>
+          <span class="title-rest">accuracy across 18 cases.</span>
+        </h1>
+        <p class="sub" id="eval-sub">Loading run data…</p>
+      </header>
+
+      <div class="gate-box" id="gate-box">
+        <div class="gate-verdict">
+          <div class="gate-verdict-text" id="gate-verdict-text">—</div>
+          <div class="gate-verdict-detail" id="gate-verdict-detail">—</div>
+        </div>
+        <div class="gate-kpis">
+          <div class="kpi">
+            <div class="kpi-value mono" id="kpi-escalation">—</div>
+            <div class="kpi-label">escalation recall</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-value mono" id="kpi-cost">—</div>
+            <div class="kpi-label">avg $ / case</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-value mono" id="kpi-p95">—</div>
+            <div class="kpi-label">p95 latency</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-value mono" id="kpi-auto">—</div>
+            <div class="kpi-label">auto-resolve %</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cases-head">
+        <div class="cases-title">18 cases</div>
+        <div class="cases-legend">
+          <span class="legend-chip legend-pass">pass</span>
+          <span class="legend-chip legend-fail">fail</span>
+        </div>
+      </div>
+      <div class="cases-list" id="cases-list"></div>
+    </div>
+
+    <!-- case detail popover (appears on click) -->
+    <aside class="case-pop" id="case-pop" hidden>
+      <div class="case-pop-head">
+        <span class="mono" id="case-pop-id">—</span>
+        <button class="case-pop-close" id="case-pop-close" aria-label="Close">×</button>
+      </div>
+      <div class="case-pop-chips" id="case-pop-chips"></div>
+      <div class="case-pop-section">
+        <div class="case-pop-label">User said</div>
+        <div class="case-pop-body" id="case-pop-user">—</div>
+      </div>
+      <div class="case-pop-section">
+        <div class="case-pop-label">Agent responded</div>
+        <div class="case-pop-body" id="case-pop-agent">—</div>
+      </div>
+      <div class="case-pop-section">
+        <div class="case-pop-label">Ground truth</div>
+        <div class="case-pop-body dim" id="case-pop-gt">—</div>
+      </div>
+    </aside>
+  </section>
+
+  <!-- ====== ARCHITECTURE ====== -->
+  <section class="mode mode-architecture" data-mode="architecture">
+    <div class="panel glass">
+      <header class="panel-head">
+        <div class="eyebrow">02 · chat concierge mirror</div>
+        <h1 class="title">5 roles, 3 model tiers.</h1>
+        <p class="sub">
+          Each role is a different shape in the scene. Haiku for cheap parsing, Sonnet for
+          reasoning, deterministic code where an LLM judge can't be trusted. Click any card
+          or shape to inspect.
+        </p>
+      </header>
+      <div class="arch-cards" id="arch-cards"></div>
+      <div class="arch-routing">
+        <div class="arch-routing-head">routing rules</div>
+        <div class="arch-routing-rules">
+          <div class="arch-rule"><span class="mono">communicator</span> → <span class="mono">planner</span> <em>· default</em></div>
+          <div class="arch-rule"><span class="mono">communicator</span> → <span class="mono">hitl</span> <em>· adversarial marker</em></div>
+          <div class="arch-rule"><span class="mono">evaluator</span> → <span class="mono">planner</span> <em>· replan (≤2)</em></div>
+          <div class="arch-rule"><span class="mono">evaluator</span> → <span class="mono">hitl</span> <em>· escalate</em></div>
+          <div class="arch-rule"><span class="mono">explainer</span> → <span class="mono">hitl</span> <em>· reg E rollback</em></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== TRACE ====== -->
+  <section class="mode mode-trace" data-mode="trace">
+    <div class="panel glass">
+      <header class="panel-head">
+        <div class="eyebrow">04 · per-run trace</div>
+        <h1 class="title">18 real runs.</h1>
+        <p class="sub">Pick any case to see its latency per role and the actual flight through the scene.</p>
+      </header>
+      <div class="trace-filter" role="group">
+        <button class="trace-filter-btn active" data-filter="all">All <span id="tf-count-all">18</span></button>
+        <button class="trace-filter-btn" data-filter="pass">Pass <span id="tf-count-pass">—</span></button>
+        <button class="trace-filter-btn" data-filter="fail">Fail <span id="tf-count-fail">—</span></button>
+      </div>
+      <div class="trace-picker" id="trace-picker"></div>
+      <div class="trace-waterfall-box" id="trace-waterfall-box" hidden>
+        <div class="trace-waterfall-head">
+          <span class="mono" id="tw-case-id">—</span>
+          <span class="mono dim" id="tw-total">—</span>
+        </div>
+        <div class="trace-waterfall" id="trace-waterfall"></div>
+      </div>
+    </div>
+    <aside class="case-pop case-pop-trace" id="trace-detail" hidden>
+      <div class="case-pop-head">
+        <span class="mono" id="trace-detail-id">—</span>
+        <button class="btn btn-ghost btn-sm" id="trace-replay">↻ replay flight</button>
+      </div>
+      <div class="case-pop-chips" id="trace-detail-chips"></div>
+      <div class="case-pop-section">
+        <div class="case-pop-label">User said</div>
+        <div class="case-pop-body" id="trace-detail-user">—</div>
+      </div>
+      <div class="case-pop-section">
+        <div class="case-pop-label">Agent responded</div>
+        <div class="case-pop-body" id="trace-detail-agent">—</div>
+      </div>
+      <div class="case-pop-section">
+        <div class="case-pop-label">Ground truth</div>
+        <div class="case-pop-body dim" id="trace-detail-gt">—</div>
+      </div>
+    </aside>
+  </section>
+
+  <!-- ====== HARNESS ====== -->
+  <section class="mode mode-harness" data-mode="harness">
+    <div class="harness-container">
+      <header class="harness-head">
+        <div class="eyebrow">06 · agent = model + harness</div>
+        <h1 class="harness-title">The model is 10% of the agent.</h1>
+        <p class="harness-sub">
+          The other 90% is six layers of harness engineering. Each is a glowing shape orbiting the scene.
+          Hover a card to light up the matching shape in 3D.
+        </p>
+      </header>
+      <div class="layers-grid-wide" id="layers-grid"></div>
+    </div>
+  </section>
+
+  <!-- ====== ROLLBACK ====== -->
+  <section class="mode mode-rollback" data-mode="rollback">
+    <div class="panel glass">
+      <header class="panel-head">
+        <div class="eyebrow">guardrails · rollback demo</div>
+        <h1 class="title">Same dispute, twice.</h1>
+        <p class="sub">
+          Second run: we strip the Reg E phrases from the Explainer's output. The agent's own post-check
+          catches it and routes to human review. The non-compliant message never reaches the customer.
+        </p>
+      </header>
+
+      <div class="rb-actions">
+        <button class="btn btn-primary" id="rb-play">
+          <span class="btn-label">▶ Play</span>
+        </button>
+        <button class="btn btn-ghost" id="rb-play-live">Play with real LLM</button>
+        <button class="btn btn-ghost" id="rb-reset">↺ Reset</button>
+      </div>
+
+      <div class="rb-status" id="rb-status">ready</div>
+
+      <div class="rb-compare">
+        <div class="rb-side rb-side-clean" id="rb-clean">
+          <div class="rb-side-head">
+            <span class="chip chip-auto">auto_refund</span>
+            <span class="rb-side-label">clean run</span>
+          </div>
+          <div class="rb-side-body" id="rb-clean-body">Press <span class="mono">▶ Play</span> to see the clean path.</div>
+          <div class="rb-side-phrases" id="rb-clean-phrases"></div>
+        </div>
+        <div class="rb-side rb-side-tampered" id="rb-tampered">
+          <div class="rb-side-head">
+            <span class="chip chip-hitl">human_review</span>
+            <span class="rb-side-label">tampered run</span>
+          </div>
+          <div class="rb-side-body" id="rb-tampered-body">Tampered message will appear here.</div>
+          <div class="rb-side-phrases" id="rb-tampered-phrases"></div>
+          <div class="rb-tampered-reason mono" id="rb-tampered-reason"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- small role popover (appears when you click a 3D node — any mode) -->
+<aside class="role-pop" id="role-pop" hidden>
+  <div class="role-pop-head">
+    <span class="role-pop-dot" id="role-pop-dot"></span>
+    <span class="role-pop-name" id="role-pop-name">—</span>
+    <button class="role-pop-close" id="role-pop-close" aria-label="Close">×</button>
+  </div>
+  <div class="role-pop-model mono" id="role-pop-model">—</div>
+  <div class="role-pop-body" id="role-pop-body">—</div>
+  <div class="role-pop-file mono" id="role-pop-file">—</div>
+</aside>
+
+<!-- layer popover (appears when you click a 3D harness orbit OR a layer card) -->
+<aside class="role-pop layer-pop" id="layer-pop" hidden>
+  <div class="role-pop-head">
+    <span class="role-pop-dot" id="layer-pop-dot"></span>
+    <span class="role-pop-name" id="layer-pop-name">—</span>
+    <button class="role-pop-close" id="layer-pop-close" aria-label="Close">×</button>
+  </div>
+  <div class="role-pop-model mono" id="layer-pop-index">—</div>
+  <div class="role-pop-body" id="layer-pop-body">—</div>
+  <div class="role-pop-file mono" id="layer-pop-file">—</div>
+</aside>
+
+<!-- floating hint for 3D scene -->
+<div class="scene-hint" id="scene-hint">
+  drag to rotate · click a node to inspect a role
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="spark" id="spark"></div>
+
+<script type="module" src="dashboard.js"></script>
+</body>
+</html>

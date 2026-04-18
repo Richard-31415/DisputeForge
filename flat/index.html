@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>DisputeForge — workshop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<script src="data.js"></script>
+</head>
+<body data-zoom-mode="zone" data-zone="0">
+
+<!-- top-left brand + keyboard hints -->
+<aside class="hud hud-left">
+  <div class="brand">
+    <div class="brand-mark"></div>
+    <div class="brand-text">
+      <div class="brand-name">DisputeForge</div>
+      <div class="brand-sub">workshop · v0.2</div>
+    </div>
+  </div>
+  <div class="hud-hints">
+    <div class="hint"><kbd>←</kbd><kbd>→</kbd> adjacent zones</div>
+    <div class="hint"><kbd>1</kbd>–<kbd>7</kbd> jump to zone</div>
+    <div class="hint"><kbd>esc</kbd> zoom out</div>
+    <div class="hint"><kbd>drag</kbd> pan freely</div>
+  </div>
+</aside>
+
+<!-- top-right minimap nav -->
+<aside class="hud hud-right">
+  <div class="minimap-wrap">
+    <svg class="minimap" id="minimap" viewBox="0 0 260 120" aria-label="Workshop overview"></svg>
+    <div class="minimap-list" id="minimap-list"></div>
+  </div>
+  <div class="status-row">
+    <span class="dot" id="status-dot"></span>
+    <span id="status-text">server…</span>
+  </div>
+</aside>
+
+<!-- zone chrome: current zone indicator (bottom-left) -->
+<div class="zone-chrome">
+  <div class="zone-chrome-row">
+    <span class="zone-chrome-num mono" id="chrome-num">01</span>
+    <span class="zone-chrome-name" id="chrome-name">Overview</span>
+  </div>
+  <div class="zone-chrome-counter mono" id="chrome-counter">01 / 07</div>
+</div>
+
+<!-- the main pannable plane -->
+<main class="plane" id="plane">
+  <div class="plane-content" id="plane-content">
+
+    <!-- ============ ZONE 01 · OVERVIEW ============ -->
+    <section class="zone" data-zone-idx="0" data-zone-id="overview" data-x="0" data-y="0" data-w="1100" data-h="760">
+      <div class="zone-wallpaper">
+        <div class="wall-num">01</div>
+        <div class="wall-title">Overview</div>
+      </div>
+
+      <div class="zone-detail zone-overview">
+        <div class="eyebrow">workshop · disputeforge</div>
+        <h1 class="hero">
+          A Reg&nbsp;E dispute agent<br/>
+          <em>that refuses to deploy itself</em><br/>
+          until it's safe.
+        </h1>
+        <p class="lede">
+          Five deterministic roles. Three model tiers. A deployment gate that treats
+          <em>ship&nbsp;it&nbsp;Monday</em> as the actual bar. This workshop spreads seven chapters
+          across a single canvas — pan, zoom, navigate by keyboard.
+        </p>
+        <div class="kpi-row">
+          <div class="kpi">
+            <div class="kpi-v mono" id="ov-accuracy">—</div>
+            <div class="kpi-line"></div>
+            <div class="kpi-l">accuracy · gate at 90%</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-v mono" id="ov-esc">—</div>
+            <div class="kpi-line"></div>
+            <div class="kpi-l">escalation recall</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-v mono" id="ov-cost">—</div>
+            <div class="kpi-line"></div>
+            <div class="kpi-l">avg $ / case</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-v mono" id="ov-p95">—</div>
+            <div class="kpi-line"></div>
+            <div class="kpi-l">p95 latency</div>
+          </div>
+        </div>
+        <div class="nav-chips">
+          <button class="chip-nav" data-goto="1">start tour →</button>
+          <button class="chip-nav" data-goto-overview>workshop view</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ZONE 02 · AGENTS ============ -->
+    <section class="zone" data-zone-idx="1" data-zone-id="agents" data-x="1300" data-y="0" data-w="1100" data-h="760">
+      <div class="zone-wallpaper">
+        <div class="wall-num">02</div>
+        <div class="wall-title">Agents</div>
+        <div class="wall-sub">chord · ridgeline</div>
+      </div>
+
+      <div class="zone-detail zone-agents" data-hover="">
+        <header class="z-head">
+          <div class="eyebrow">02 · ensemble</div>
+          <h2 class="z-title">Five roles, in conversation.</h2>
+          <p class="z-sub">
+            The chord above shows how messages flow between roles. The ridgeline below shows per-role
+            time spent across the 18 eval runs. Hover a ribbon or a ridge — the non-matching fades out.
+          </p>
+        </header>
+
+        <div class="ensemble">
+          <figure class="ens-chord">
+            <svg id="chord-svg" viewBox="-220 -220 440 440" aria-label="Agent chord diagram"></svg>
+          </figure>
+          <figure class="ens-ridges">
+            <svg id="ridges-svg" viewBox="0 0 640 220" aria-label="Per-role timing ridgeline"></svg>
+            <div class="ridges-axis mono">latency →</div>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ZONE 03 · LIVE RUN ============ -->
+    <section class="zone" data-zone-idx="2" data-zone-id="live" data-x="2600" data-y="0" data-w="1100" data-h="760">
+      <div class="zone-wallpaper">
+        <div class="wall-num">03</div>
+        <div class="wall-title">Live Run</div>
+      </div>
+
+      <div class="zone-detail zone-live">
+        <header class="z-head">
+          <div class="eyebrow">03 · live agent</div>
+          <h2 class="z-title">Submit a dispute.</h2>
+          <p class="z-sub">
+            The agent graph runs end-to-end against the real API. Each role's exit appears below as
+            the SSE stream lands. Typical latency: 15–30 seconds.
+          </p>
+        </header>
+
+        <div class="live-grid">
+          <div class="card form-card">
+            <div class="presets">
+              <button class="preset" data-preset="small_fraud">Small fraud <span class="mono dim">$24</span></button>
+              <button class="preset" data-preset="big_fraud">Big fraud <span class="mono dim">$842</span></button>
+              <button class="preset" data-preset="remorse">Buyer's remorse</button>
+              <button class="preset" data-preset="injection">Prompt injection</button>
+            </div>
+
+            <label class="field">
+              <div class="field-label">User message</div>
+              <textarea id="df-message" rows="3" placeholder="I did not make this charge — please refund it."></textarea>
+            </label>
+
+            <div class="field-row">
+              <label class="field field-half">
+                <div class="field-label">Amount</div>
+                <div class="field-input-wrap">
+                  <span class="field-prefix">$</span>
+                  <input id="df-amount" type="number" step="0.01" min="0.01" value="24.99" />
+                </div>
+              </label>
+              <label class="field field-half">
+                <div class="field-label">Merchant</div>
+                <input id="df-merchant" type="text" value="SketchyGadgets" />
+              </label>
+            </div>
+
+            <button class="btn btn-primary" id="df-submit">
+              <span class="btn-label">Run agent</span>
+              <span class="btn-hint mono">⌘↵</span>
+            </button>
+          </div>
+
+          <div class="card trace-card">
+            <div class="trace-head">
+              <div class="trace-status-row">
+                <span class="trace-dot" id="trace-dot"></span>
+                <span class="trace-phase" id="trace-phase">idle</span>
+              </div>
+              <span class="mono dim" id="trace-timer">0.0s</span>
+            </div>
+
+            <ol class="trace-steps" id="trace-steps">
+              <li class="trace-step" data-role="communicator">
+                <span class="trace-step-i mono">01</span>
+                <div class="trace-step-body">
+                  <div class="trace-step-name">Communicator</div>
+                  <div class="trace-step-detail">Waiting for input.</div>
+                </div>
+              </li>
+              <li class="trace-step" data-role="planner">
+                <span class="trace-step-i mono">02</span>
+                <div class="trace-step-body">
+                  <div class="trace-step-name">Planner</div>
+                  <div class="trace-step-detail">—</div>
+                </div>
+              </li>
+              <li class="trace-step" data-role="evaluator">
+                <span class="trace-step-i mono">03</span>
+                <div class="trace-step-body">
+                  <div class="trace-step-name">Evaluator</div>
+                  <div class="trace-step-detail">—</div>
+                </div>
+              </li>
+              <li class="trace-step" data-role="explainer">
+                <span class="trace-step-i mono">04</span>
+                <div class="trace-step-body">
+                  <div class="trace-step-name">Explainer</div>
+                  <div class="trace-step-detail">—</div>
+                </div>
+              </li>
+              <li class="trace-step trace-step-hitl" data-role="hitl" hidden>
+                <span class="trace-step-i mono">05</span>
+                <div class="trace-step-body">
+                  <div class="trace-step-name">Human review</div>
+                  <div class="trace-step-detail">—</div>
+                </div>
+              </li>
+            </ol>
+
+            <div class="trace-result" id="trace-result" hidden>
+              <div class="trace-result-head">
+                <span class="trace-result-chip" id="trace-result-chip">—</span>
+                <span class="mono dim" id="trace-result-dur">—</span>
+              </div>
+              <div class="trace-result-label">Customer response</div>
+              <blockquote class="trace-result-message" id="trace-result-message">—</blockquote>
+              <button class="btn btn-ghost btn-sm" id="trace-reset">↺ new dispute</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ZONE 04 · GATE ============ -->
+    <section class="zone" data-zone-idx="3" data-zone-id="gate" data-x="3900" data-y="0" data-w="1100" data-h="760">
+      <div class="zone-wallpaper">
+        <div class="wall-num">04</div>
+        <div class="wall-title">Gate</div>
+        <div class="wall-sub">kinetic · waffle</div>
+      </div>
+
+      <div class="zone-detail zone-gate">
+        <header class="z-head">
+          <div class="eyebrow">04 · deployment gate</div>
+        </header>
+
+        <figure class="kinetic">
+          <div class="kinetic-num mono" id="k-num">0%</div>
+          <div class="kinetic-underline" id="k-underline"></div>
+          <figcaption class="kinetic-cap">
+            <span class="mono dim">accuracy · gate at 90%</span>
+            <span class="kinetic-delta mono" id="k-delta">—</span>
+          </figcaption>
+        </figure>
+
+        <div class="verdict-card" id="verdict-card">
+          <div class="verdict-title mono" id="verdict-text">—</div>
+          <div class="verdict-detail" id="verdict-detail">—</div>
+        </div>
+
+        <div class="waffle-section">
+          <div class="waffle-head">
+            <div class="subheading">18 cases · outcome</div>
+            <div class="waffle-legend">
+              <span class="wl"><i class="wl-dot wl-auto"></i>auto_refund</span>
+              <span class="wl"><i class="wl-dot wl-hitl"></i>human_review</span>
+              <span class="wl"><i class="wl-dot wl-deny"></i>deny</span>
+              <span class="wl"><i class="wl-dot wl-fail"></i>fail</span>
+            </div>
+          </div>
+          <svg id="waffle" viewBox="0 0 720 120" aria-label="Case outcomes waffle"></svg>
+        </div>
+
+        <div class="metric-strip" id="metric-strip"></div>
+      </div>
+    </section>
+
+    <!-- ============ ZONE 05 · CASES ============ -->
+    <section class="zone" data-zone-idx="4" data-zone-id="cases" data-x="0" data-y="900" data-w="1100" data-h="760">
+      <div class="zone-wallpaper">
+        <div class="wall-num">05</div>
+        <div class="wall-title">Cases</div>
+        <div class="wall-sub">beeswarm · 18 × latency</div>
+      </div>
+
+      <div class="zone-detail zone-cases">
+        <header class="z-head">
+          <div class="eyebrow">05 · per-case</div>
+          <h2 class="z-title">Eighteen runs, plotted.</h2>
+          <p class="z-sub">
+            Each dot is a case. Horizontal position is measured latency. Color is the action the agent
+            took. Force-bumped to avoid overlap. Hover any dot to read the case.
+          </p>
+        </header>
+
+        <div class="swarm-wrap">
+          <svg id="beeswarm" viewBox="0 0 900 380" aria-label="Case beeswarm"></svg>
+          <div class="swarm-tip" id="swarm-tip" hidden>
+            <div class="swarm-tip-head mono" id="swarm-tip-id">—</div>
+            <div class="swarm-tip-chips" id="swarm-tip-chips"></div>
+            <div class="swarm-tip-body" id="swarm-tip-body">—</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ZONE 06 · ROLLBACK ============ -->
+    <section class="zone" data-zone-idx="5" data-zone-id="rollback" data-x="1300" data-y="900" data-w="1100" data-h="760">
+      <div class="zone-wallpaper">
+        <div class="wall-num">06</div>
+        <div class="wall-title">Rollback</div>
+        <div class="wall-sub">slopegraph · divergence</div>
+      </div>
+
+      <div class="zone-detail zone-rollback">
+        <header class="z-head">
+          <div class="eyebrow">06 · guardrail rollback</div>
+          <h2 class="z-title">Same input, twice.</h2>
+          <p class="z-sub">
+            The second run has the Reg E phrases stripped from the Explainer's output. The agent's
+            own post-check catches it and routes to human review. The divergence is at step&nbsp;04.
+          </p>
+        </header>
+
+        <div class="rb-actions">
+          <button class="btn btn-primary btn-sm" id="rb-play">▸ Play</button>
+          <button class="btn btn-ghost btn-sm" id="rb-play-live">Live</button>
+          <button class="btn btn-ghost btn-sm" id="rb-reset">↺ Reset</button>
+          <span class="mono dim rb-state" id="rb-state">idle</span>
+        </div>
+
+        <svg id="slopegraph" viewBox="0 0 720 420" aria-label="Clean vs tampered slopegraph"></svg>
+      </div>
+    </section>
+
+    <!-- ============ ZONE 07 · HARNESS ============ -->
+    <section class="zone" data-zone-idx="6" data-zone-id="harness" data-x="2600" data-y="900" data-w="1100" data-h="760">
+      <div class="zone-wallpaper">
+        <div class="wall-num">07</div>
+        <div class="wall-title">Harness</div>
+        <div class="wall-sub">six layers</div>
+      </div>
+
+      <div class="zone-detail zone-harness">
+        <header class="z-head">
+          <div class="eyebrow">07 · agent = model + harness</div>
+          <h2 class="z-title">The model is 10% of the agent.</h2>
+          <p class="z-sub">
+            The other 90% lives in these six files — context, tools, orchestration, memory, evaluation,
+            guardrails. The work that turns a prototype into something you can ship.
+          </p>
+        </header>
+        <div class="harness-grid" id="harness-grid"></div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
