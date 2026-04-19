@@ -183,133 +183,137 @@
       </div>
     </section>
 
-    <!-- ============ ZONE 03 · LIVE RUN ============ -->
-    <section class="zone" data-zone-idx="2" data-zone-id="live" data-x="2600" data-y="0" data-w="1100" data-h="760">
+    <!-- ============ ZONE 03 · PIPELINE ============ -->
+    <section class="zone" data-zone-idx="2" data-zone-id="pipeline" data-x="2600" data-y="0" data-w="1100" data-h="760">
       <div class="zone-wallpaper">
         <div class="wall-num">03</div>
-        <div class="wall-title">Live Run</div>
+        <div class="wall-title">Pipeline</div>
+        <div class="wall-sub">deep trace · every hop</div>
       </div>
 
-      <div class="zone-detail zone-live">
-        <header class="z-head">
-          <div class="eyebrow">03 · live agent</div>
-          <h2 class="z-title">Submit a dispute.</h2>
-          <p class="z-sub">
-            The agent graph runs end-to-end against the real API. Each role's exit appears below as
-            the SSE stream lands. Typical latency: 15–30 seconds.
-          </p>
+      <div class="zone-detail zone-pipeline">
+        <header class="z-head z-head-tight">
+          <div class="eyebrow">03 · pipeline trace</div>
+          <h2 class="z-title">Every step, in full.</h2>
         </header>
 
-        <div class="live-grid">
-          <div class="card form-card">
-            <div class="presets">
-              <button class="preset" data-preset="small_fraud">Small fraud <span class="mono dim">$24</span></button>
-              <button class="preset" data-preset="big_fraud">Big fraud <span class="mono dim">$842</span></button>
-              <button class="preset" data-preset="remorse">Buyer's remorse</button>
-              <button class="preset" data-preset="injection">Prompt injection</button>
-            </div>
-
-            <label class="field">
-              <div class="field-label">User message</div>
-              <textarea id="df-message" rows="3" placeholder="I did not make this charge — please refund it."></textarea>
-            </label>
-
-            <div class="field-row">
-              <label class="field field-half">
-                <div class="field-label">Amount</div>
-                <div class="field-input-wrap">
-                  <span class="field-prefix">$</span>
-                  <input id="df-amount" type="number" step="0.01" min="0.01" value="24.99" />
-                </div>
-              </label>
-              <label class="field field-half">
-                <div class="field-label">Merchant</div>
-                <input id="df-merchant" type="text" value="SketchyGadgets" />
-              </label>
-            </div>
-
-            <button class="btn btn-primary" id="df-submit">
-              <span class="btn-label">Run agent</span>
-              <span class="btn-hint mono">⌘↵</span>
-            </button>
+        <div class="p8-form">
+          <div class="p8-presets">
+            <button class="p8-preset" data-p8-preset="small_fraud">$24 fraud</button>
+            <button class="p8-preset" data-p8-preset="big_fraud">$842 fraud</button>
+            <button class="p8-preset" data-p8-preset="remorse">buyer's remorse</button>
+            <button class="p8-preset" data-p8-preset="injection">injection</button>
           </div>
-
-          <div class="card trace-card">
-            <div class="trace-head">
-              <div class="trace-status-row">
-                <span class="trace-dot" id="trace-dot"></span>
-                <span class="trace-phase" id="trace-phase">idle</span>
-              </div>
-              <span class="mono dim" id="trace-timer">0.0s</span>
-            </div>
-
-            <ol class="trace-steps" id="trace-steps">
-              <li class="trace-step" data-role="communicator">
-                <span class="trace-step-i mono">01</span>
-                <div class="trace-step-body">
-                  <div class="trace-step-name">Communicator</div>
-                  <div class="trace-step-detail">Waiting for input.</div>
-                </div>
-              </li>
-              <li class="trace-step" data-role="planner">
-                <span class="trace-step-i mono">02</span>
-                <div class="trace-step-body">
-                  <div class="trace-step-name">Planner</div>
-                  <div class="trace-step-detail">—</div>
-                </div>
-              </li>
-              <li class="trace-step" data-role="evaluator">
-                <span class="trace-step-i mono">03</span>
-                <div class="trace-step-body">
-                  <div class="trace-step-name">Evaluator</div>
-                  <div class="trace-step-detail">—</div>
-                </div>
-              </li>
-              <li class="trace-step" data-role="explainer">
-                <span class="trace-step-i mono">04</span>
-                <div class="trace-step-body">
-                  <div class="trace-step-name">Explainer</div>
-                  <div class="trace-step-detail">—</div>
-                </div>
-              </li>
-              <li class="trace-step trace-step-hitl" data-role="hitl" hidden>
-                <span class="trace-step-i mono">05</span>
-                <div class="trace-step-body">
-                  <div class="trace-step-name">Human review</div>
-                  <div class="trace-step-detail">—</div>
-                </div>
-              </li>
-            </ol>
-
-            <div class="trace-result" id="trace-result" hidden>
-              <div class="trace-result-head">
-                <span class="trace-result-chip" id="trace-result-chip">—</span>
-                <span class="mono dim" id="trace-result-dur">—</span>
-              </div>
-              <div class="trace-result-label">Customer response</div>
-              <blockquote class="trace-result-message" id="trace-result-message">—</blockquote>
-              <button class="btn btn-ghost btn-sm" id="trace-reset">↺ new dispute</button>
-            </div>
+          <div class="p8-form-row">
+            <textarea id="p8-message" rows="2" placeholder="I did not make this charge…">I did not make this $24.99 charge — I've never heard of this merchant.</textarea>
+          </div>
+          <div class="p8-form-row">
+            <div class="field-input-wrap p8-amount-wrap"><span class="field-prefix">$</span><input id="p8-amount" type="number" step="0.01" min="0.01" value="24.99" /></div>
+            <input id="p8-merchant" type="text" value="SketchyGadgets" placeholder="Merchant" />
+            <button class="btn btn-primary btn-sm" id="p8-submit"><span class="btn-label">Run agent</span></button>
           </div>
         </div>
 
-        <!-- TERMINAL: streaming SSE trace as structured JSON -->
-        <div class="terminal" id="terminal">
-          <div class="terminal-head">
-            <span class="terminal-title mono">trace <span class="dim">→</span> <span id="term-run-id">—</span></span>
-            <span class="terminal-status mono" id="term-status">
-              <span class="term-led" id="term-led"></span>
-              <span id="term-status-text">idle</span>
-            </span>
+        <div class="p8-status-bar">
+          <span class="pf-run-dot" id="p8-dot"></span>
+          <span class="p8-phase mono" id="p8-phase">idle — fill the form and click Run agent</span>
+          <span class="mono dim" id="p8-timer"></span>
+        </div>
+
+        <div class="p8-pipeline" id="p8-pipeline" data-active="">
+          <div class="p8-rail">
+            <svg class="p8-rail-svg" viewBox="0 0 800 58" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+              <line x1="60" y1="26" x2="740" y2="26" class="p8-rail-track"/>
+              <line x1="60" y1="26" x2="60" y2="26" class="p8-rail-track-fill" id="p8-rail-fill"/>
+              <g class="p8-stations">
+                <g class="p8-station" data-idx="0" data-stage="communicator">
+                  <circle cx="60"  cy="26" r="5" class="p8-station-dot"/>
+                  <text x="60"  y="52" class="p8-station-label">01</text>
+                </g>
+                <g class="p8-station" data-idx="1" data-stage="planner">
+                  <circle cx="230" cy="26" r="5" class="p8-station-dot"/>
+                  <text x="230" y="52" class="p8-station-label">02</text>
+                </g>
+                <g class="p8-station" data-idx="2" data-stage="executor">
+                  <circle cx="400" cy="26" r="5" class="p8-station-dot"/>
+                  <text x="400" y="52" class="p8-station-label">03</text>
+                </g>
+                <g class="p8-station" data-idx="3" data-stage="evaluator">
+                  <circle cx="570" cy="26" r="5" class="p8-station-dot"/>
+                  <text x="570" y="52" class="p8-station-label">04</text>
+                </g>
+                <g class="p8-station" data-idx="4" data-stage="explainer">
+                  <circle cx="740" cy="26" r="5" class="p8-station-dot"/>
+                  <text x="740" y="52" class="p8-station-label">05</text>
+                </g>
+              </g>
+              <circle id="p8-rail-ring" cx="60" cy="26" r="5" class="p8-rail-ring"/>
+              <circle id="p8-rail-dot" cx="60" cy="26" r="4.5" class="p8-rail-dot"/>
+            </svg>
           </div>
-          <div class="terminal-body" id="terminal-body">
-            <div class="term-line term-hint"><span class="term-punct">//</span> submit a dispute above — events stream here as JSON</div>
-          </div>
-          <button class="term-pin" id="term-pin" hidden>↓ new events</button>
+
+          <article class="p8-stage" data-stage="communicator" data-status="idle" id="p8-stage-communicator">
+            <header class="p8-stage-head">
+              <span class="p8-stage-num mono">01</span>
+              <span class="p8-stage-name">communicator</span>
+              <span class="p8-stage-dots"></span>
+              <span class="p8-stage-summary mono" id="p8-sum-communicator"></span>
+              <span class="p8-stage-time mono" id="p8-time-communicator">—</span>
+              <span class="p8-stage-glyph" id="p8-glyph-communicator">○</span>
+            </header>
+            <div class="p8-stage-body" id="p8-body-communicator"></div>
+          </article>
+
+          <article class="p8-stage" data-stage="planner" data-status="idle" id="p8-stage-planner">
+            <header class="p8-stage-head">
+              <span class="p8-stage-num mono">02</span>
+              <span class="p8-stage-name">planner <span class="p8-stage-sub mono">+ RAG</span></span>
+              <span class="p8-stage-dots"></span>
+              <span class="p8-stage-summary mono" id="p8-sum-planner"></span>
+              <span class="p8-stage-time mono" id="p8-time-planner">—</span>
+              <span class="p8-stage-glyph" id="p8-glyph-planner">○</span>
+            </header>
+            <div class="p8-stage-body" id="p8-body-planner"></div>
+          </article>
+
+          <article class="p8-stage" data-stage="executor" data-status="idle" id="p8-stage-executor">
+            <header class="p8-stage-head">
+              <span class="p8-stage-num mono">03</span>
+              <span class="p8-stage-name">executor</span>
+              <span class="p8-stage-dots"></span>
+              <span class="p8-stage-summary mono" id="p8-sum-executor"></span>
+              <span class="p8-stage-time mono" id="p8-time-executor">—</span>
+              <span class="p8-stage-glyph" id="p8-glyph-executor">○</span>
+            </header>
+            <div class="p8-stage-body" id="p8-body-executor"></div>
+          </article>
+
+          <article class="p8-stage" data-stage="evaluator" data-status="idle" id="p8-stage-evaluator">
+            <header class="p8-stage-head">
+              <span class="p8-stage-num mono">04</span>
+              <span class="p8-stage-name">evaluator</span>
+              <span class="p8-stage-dots"></span>
+              <span class="p8-stage-summary mono" id="p8-sum-evaluator"></span>
+              <span class="p8-stage-time mono" id="p8-time-evaluator">—</span>
+              <span class="p8-stage-glyph" id="p8-glyph-evaluator">○</span>
+            </header>
+            <div class="p8-stage-body" id="p8-body-evaluator"></div>
+          </article>
+
+          <article class="p8-stage" data-stage="explainer" data-status="idle" id="p8-stage-explainer">
+            <header class="p8-stage-head">
+              <span class="p8-stage-num mono">05</span>
+              <span class="p8-stage-name">explainer</span>
+              <span class="p8-stage-dots"></span>
+              <span class="p8-stage-summary mono" id="p8-sum-explainer"></span>
+              <span class="p8-stage-time mono" id="p8-time-explainer">—</span>
+              <span class="p8-stage-glyph" id="p8-glyph-explainer">○</span>
+            </header>
+            <div class="p8-stage-body" id="p8-body-explainer"></div>
+          </article>
         </div>
       </div>
     </section>
-
     <!-- ============ ZONE 04 · GATE ============ -->
     <section class="zone" data-zone-idx="3" data-zone-id="gate" data-x="3900" data-y="0" data-w="1100" data-h="760">
       <div class="zone-wallpaper">
@@ -530,158 +534,17 @@
         </div>
       </div>
     </section>
-    <!-- ============ ZONE 08 · PIPELINE ============ -->
-    <section class="zone" data-zone-idx="7" data-zone-id="pipeline" data-x="2600" data-y="900" data-w="1100" data-h="760">
+    <!-- ============ ZONE 09 · ENSEMBLE ============ -->
+    <section class="zone" data-zone-idx="8" data-zone-id="ensemble" data-x="3900" data-y="900" data-w="1100" data-h="760">
       <div class="zone-wallpaper">
-        <div class="wall-num">08</div>
-        <div class="wall-title">Pipeline</div>
-        <div class="wall-sub">deep trace · every hop</div>
-      </div>
-
-      <div class="zone-detail zone-pipeline">
-        <header class="z-head z-head-tight">
-          <div class="eyebrow">08 · pipeline trace</div>
-          <h2 class="z-title">Every step, in full.</h2>
-        </header>
-
-        <!-- compact submit form -->
-        <div class="p8-form">
-          <div class="p8-presets">
-            <button class="p8-preset" data-p8-preset="small_fraud">$24 fraud</button>
-            <button class="p8-preset" data-p8-preset="big_fraud">$842 fraud</button>
-            <button class="p8-preset" data-p8-preset="remorse">buyer's remorse</button>
-            <button class="p8-preset" data-p8-preset="injection">injection</button>
-          </div>
-          <div class="p8-form-row">
-            <textarea id="p8-message" rows="2" placeholder="I did not make this charge…">I did not make this $24.99 charge — I've never heard of this merchant.</textarea>
-          </div>
-          <div class="p8-form-row">
-            <div class="field-input-wrap p8-amount-wrap"><span class="field-prefix">$</span><input id="p8-amount" type="number" step="0.01" min="0.01" value="24.99" /></div>
-            <input id="p8-merchant" type="text" value="SketchyGadgets" placeholder="Merchant" />
-            <button class="btn btn-primary btn-sm" id="p8-submit"><span class="btn-label">Run agent</span></button>
-          </div>
-        </div>
-
-        <!-- status bar -->
-        <div class="p8-status-bar">
-          <span class="pf-run-dot" id="p8-dot"></span>
-          <span class="p8-phase mono" id="p8-phase">idle — fill the form and click Run agent</span>
-          <span class="mono dim" id="p8-timer"></span>
-        </div>
-
-        <!-- Pipeline: horizontal rail header + 5 accordion stage cards.
-             Exactly one card is active at a time (fills remaining height);
-             the other four collapse to 44px headers. Overlap is structurally
-             impossible because active uses flex:1 and collapsed cards are
-             flex:0 0 44px. All content scrolls WITHIN the active card only. -->
-        <div class="p8-pipeline" id="p8-pipeline" data-active="">
-          <div class="p8-rail">
-            <svg class="p8-rail-svg" viewBox="0 0 800 58" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-              <line x1="60" y1="26" x2="740" y2="26" class="p8-rail-track"/>
-              <line x1="60" y1="26" x2="60" y2="26" class="p8-rail-track-fill" id="p8-rail-fill"/>
-              <g class="p8-stations">
-                <g class="p8-station" data-idx="0" data-stage="communicator">
-                  <circle cx="60"  cy="26" r="5" class="p8-station-dot"/>
-                  <text x="60"  y="52" class="p8-station-label">01</text>
-                </g>
-                <g class="p8-station" data-idx="1" data-stage="planner">
-                  <circle cx="230" cy="26" r="5" class="p8-station-dot"/>
-                  <text x="230" y="52" class="p8-station-label">02</text>
-                </g>
-                <g class="p8-station" data-idx="2" data-stage="executor">
-                  <circle cx="400" cy="26" r="5" class="p8-station-dot"/>
-                  <text x="400" y="52" class="p8-station-label">03</text>
-                </g>
-                <g class="p8-station" data-idx="3" data-stage="evaluator">
-                  <circle cx="570" cy="26" r="5" class="p8-station-dot"/>
-                  <text x="570" y="52" class="p8-station-label">04</text>
-                </g>
-                <g class="p8-station" data-idx="4" data-stage="explainer">
-                  <circle cx="740" cy="26" r="5" class="p8-station-dot"/>
-                  <text x="740" y="52" class="p8-station-label">05</text>
-                </g>
-              </g>
-              <!-- breathing ring around the active station -->
-              <circle id="p8-rail-ring" cx="60" cy="26" r="5" class="p8-rail-ring"/>
-              <!-- traveling dot -->
-              <circle id="p8-rail-dot" cx="60" cy="26" r="4.5" class="p8-rail-dot"/>
-            </svg>
-          </div>
-
-          <article class="p8-stage" data-stage="communicator" data-status="idle" id="p8-stage-communicator">
-            <header class="p8-stage-head">
-              <span class="p8-stage-num mono">01</span>
-              <span class="p8-stage-name">communicator</span>
-              <span class="p8-stage-dots"></span>
-              <span class="p8-stage-summary mono" id="p8-sum-communicator"></span>
-              <span class="p8-stage-time mono" id="p8-time-communicator">—</span>
-              <span class="p8-stage-glyph" id="p8-glyph-communicator">○</span>
-            </header>
-            <div class="p8-stage-body" id="p8-body-communicator"></div>
-          </article>
-
-          <article class="p8-stage" data-stage="planner" data-status="idle" id="p8-stage-planner">
-            <header class="p8-stage-head">
-              <span class="p8-stage-num mono">02</span>
-              <span class="p8-stage-name">planner <span class="p8-stage-sub mono">+ RAG</span></span>
-              <span class="p8-stage-dots"></span>
-              <span class="p8-stage-summary mono" id="p8-sum-planner"></span>
-              <span class="p8-stage-time mono" id="p8-time-planner">—</span>
-              <span class="p8-stage-glyph" id="p8-glyph-planner">○</span>
-            </header>
-            <div class="p8-stage-body" id="p8-body-planner"></div>
-          </article>
-
-          <article class="p8-stage" data-stage="executor" data-status="idle" id="p8-stage-executor">
-            <header class="p8-stage-head">
-              <span class="p8-stage-num mono">03</span>
-              <span class="p8-stage-name">executor</span>
-              <span class="p8-stage-dots"></span>
-              <span class="p8-stage-summary mono" id="p8-sum-executor"></span>
-              <span class="p8-stage-time mono" id="p8-time-executor">—</span>
-              <span class="p8-stage-glyph" id="p8-glyph-executor">○</span>
-            </header>
-            <div class="p8-stage-body" id="p8-body-executor"></div>
-          </article>
-
-          <article class="p8-stage" data-stage="evaluator" data-status="idle" id="p8-stage-evaluator">
-            <header class="p8-stage-head">
-              <span class="p8-stage-num mono">04</span>
-              <span class="p8-stage-name">evaluator</span>
-              <span class="p8-stage-dots"></span>
-              <span class="p8-stage-summary mono" id="p8-sum-evaluator"></span>
-              <span class="p8-stage-time mono" id="p8-time-evaluator">—</span>
-              <span class="p8-stage-glyph" id="p8-glyph-evaluator">○</span>
-            </header>
-            <div class="p8-stage-body" id="p8-body-evaluator"></div>
-          </article>
-
-          <article class="p8-stage" data-stage="explainer" data-status="idle" id="p8-stage-explainer">
-            <header class="p8-stage-head">
-              <span class="p8-stage-num mono">05</span>
-              <span class="p8-stage-name">explainer</span>
-              <span class="p8-stage-dots"></span>
-              <span class="p8-stage-summary mono" id="p8-sum-explainer"></span>
-              <span class="p8-stage-time mono" id="p8-time-explainer">—</span>
-              <span class="p8-stage-glyph" id="p8-glyph-explainer">○</span>
-            </header>
-            <div class="p8-stage-body" id="p8-body-explainer"></div>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ ZONE 10 · ENSEMBLE ============ -->
-    <section class="zone" data-zone-idx="9" data-zone-id="ensemble" data-x="5200" data-y="900" data-w="1100" data-h="760">
-      <div class="zone-wallpaper">
-        <div class="wall-num">10</div>
+        <div class="wall-num">09</div>
         <div class="wall-title">Ensemble</div>
         <div class="wall-sub">escalate-on-any · 3 parallel planners</div>
       </div>
 
       <div class="zone-detail zone-ensemble">
         <header class="z-head">
-          <div class="eyebrow">10 · ensemble planner</div>
+          <div class="eyebrow">09 · ensemble planner</div>
           <h2 class="z-title">If any agent hesitates, escalate.</h2>
           <p class="z-sub">
             Three planner instances run in parallel. If <em>any</em> vote lands on
@@ -803,17 +666,17 @@
       </div>
     </section>
 
-    <!-- ============ ZONE 09 · ABLATION ============ -->
-    <section class="zone" data-zone-idx="8" data-zone-id="ablation" data-x="3900" data-y="900" data-w="1100" data-h="760">
+    <!-- ============ ZONE 08 · ABLATION ============ -->
+    <section class="zone" data-zone-idx="7" data-zone-id="ablation" data-x="2600" data-y="900" data-w="1100" data-h="760">
       <div class="zone-wallpaper">
-        <div class="wall-num">09</div>
+        <div class="wall-num">08</div>
         <div class="wall-title">Ablation</div>
         <div class="wall-sub">harness value · 30 cases</div>
       </div>
 
       <div class="zone-detail zone-ablation">
         <header class="z-head">
-          <div class="eyebrow">09 · ablation study</div>
+          <div class="eyebrow">08 · ablation study</div>
           <h2 class="z-title">Each layer earns its place.</h2>
           <p class="z-sub">
             Seven configurations — six ablation variants plus ensemble planner. 30 cases, OpenAI provider.

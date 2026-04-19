@@ -200,9 +200,9 @@
     const z = ZONES[currentZoneIdx];
     $('#chrome-num').textContent = String(currentZoneIdx + 1).padStart(2, '0');
     $('#chrome-name').textContent = ({
-      overview: 'Overview', agents: 'Agents', live: 'Live Run',
+      overview: 'Overview', agents: 'Agents', pipeline: 'Pipeline',
       gate: 'Gate', cases: 'Cases', rollback: 'Rollback', harness: 'Harness',
-      pipeline: 'Pipeline', ablation: 'Ablation', ensemble: 'Ensemble',
+      ablation: 'Ablation', ensemble: 'Ensemble',
     })[z.id] || z.id;
     $('#chrome-counter').textContent = `${String(currentZoneIdx + 1).padStart(2, '0')} / ${String(ZONES.length).padStart(2, '0')}`;
   }
@@ -298,7 +298,6 @@
     else if (e.key === 'ArrowLeft' || e.key === 'h') { enterZone(currentZoneIdx - 1); e.preventDefault(); }
     else if (e.key === 'Escape') { enterOverview(); e.preventDefault(); }
     else if (/^[1-9]$/.test(e.key)) { enterZone(parseInt(e.key, 10) - 1); e.preventDefault(); }
-    else if (e.key === '0') { enterZone(9); e.preventDefault(); }
   }
 
   // =================================================================
@@ -3027,6 +3026,10 @@
   let liveActive = false;
 
   function wireLive() {
+    // Zone 3 was replaced by the Pipeline design (zone_id=pipeline). The
+    // old Live Run DOM (#df-*, .trace-step, etc.) no longer exists; bail
+    // gracefully if we don't find it.
+    if (!$('#df-submit')) return;
     $$('.preset').forEach(b => {
       b.addEventListener('click', () => {
         const p = PRESETS[b.dataset.preset];
@@ -3040,7 +3043,7 @@
     $('#df-message').addEventListener('keydown', e => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') submitDispute();
     });
-    $('#trace-reset').addEventListener('click', resetLive);
+    const reset = $('#trace-reset'); if (reset) reset.addEventListener('click', resetLive);
   }
 
   function resetLive() {
@@ -3602,19 +3605,35 @@
     }
 
     if (node === 'executor') {
-      const results = delta.tool_results || [];
-      if (!results.length) return row('tools', 'no tools dispatched', 'warn');
-      return '<div class="p8-tools">' + results.map(r => {
-        const ok = r.status === 'ok';
-        let content = '';
-        try { content = typeof r.content === 'string' ? r.content : JSON.stringify(r.content); }
-        catch { content = String(r.content); }
-        return `<div class="p8-tool-row">
-          <span class="p8-tool-status ${ok ? 'ok' : 'fail'}">${ok ? '✓' : '✗'}</span>
-          <span class="p8-tool-nm-sm">${escHtml(r.tool || '?')}</span>
-          <span class="p8-tool-content">${escHtml(content.slice(0, 120))}</span>
-        </div>`;
-      }).join('') + '</div>';
+      // tool_results may arrive nested under different keys depending on the
+      // graph's state-merge behaviour — check a few common shapes.
+      const results = delta.tool_results
+        || delta.results
+        || (delta.state && delta.state.tool_results)
+        || [];
+      // Also surface the plan being executed (useful when tool_results is
+      // empty because the step was guarded / skipped).
+      const planSteps = (delta.plan || []).length;
+      if (!Array.isArray(results) || !results.length) {
+        if (planSteps > 0) {
+          return row('status', `executed ${planSteps} plan step${planSteps === 1 ? '' : 's'}`, 'ok')
+               + row('tools', 'dispatched (outputs not in delta — see evaluator)', 'info');
+        }
+        return row('status', 'executor ran · no tools registered for this plan', 'warn');
+      }
+      const ok = results.filter(r => r.status === 'ok').length;
+      return row('status', `<strong class="p8-val ok">${ok}/${results.length} tools ok</strong>`)
+        + '<div class="p8-tools">' + results.map(r => {
+          const isOk = r.status === 'ok';
+          let content = '';
+          try { content = typeof r.content === 'string' ? r.content : JSON.stringify(r.content); }
+          catch { content = String(r.content); }
+          return `<div class="p8-tool-row">
+            <span class="p8-tool-status ${isOk ? 'ok' : 'fail'}">${isOk ? '✓' : '✗'}</span>
+            <span class="p8-tool-nm-sm">${escHtml(r.tool || '?')}</span>
+            <span class="p8-tool-content">${escHtml(content.slice(0, 180))}</span>
+          </div>`;
+        }).join('') + '</div>';
     }
 
     if (node === 'evaluator') {
@@ -4447,7 +4466,7 @@
       const hash = window.location.hash || '';
       const m = /^#zone-(\d{1,2})(?:\?(play|bubble|hover|sim|demo|active)=([a-z_]+))?$/.exec(hash);
       if (m) {
-        const idx = Math.max(0, Math.min(9, parseInt(m[1], 10) - 1));
+        const idx = Math.max(0, Math.min(8, parseInt(m[1], 10) - 1));
         enterZone(idx);
         if (m[2] === 'hover') {
           setTimeout(() => {
