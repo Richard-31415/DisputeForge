@@ -3274,6 +3274,137 @@ body[data-zoom-mode="zone"] .zone.current {
 }
 .ens-vote-box.locked { animation: ensVoteSnap 420ms cubic-bezier(0.2, 1.55, 0.3, 1); }
 
+/* Confidence gauge — small semi-arc in the lane header */
+.ens-gauge {
+  width: 34px;
+  height: 20px;
+  display: inline-block;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+.ens-gauge-bg {
+  fill: none;
+  stroke: rgba(15, 15, 14, 0.12);
+  stroke-width: 1.4;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+}
+.ens-gauge-fg {
+  fill: none;
+  stroke: var(--ink-0);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 35;
+  stroke-dashoffset: 35;
+  transition: stroke-dashoffset 140ms var(--ease-std);
+}
+.ens-lane.veto-winner .ens-gauge-fg { stroke: var(--umber); }
+.ens-gauge-needle-dot {
+  fill: var(--ink-0);
+  opacity: 0;
+  transition: opacity 200ms var(--ease-std);
+}
+.ens-lane.locked .ens-gauge-needle-dot { opacity: 1; }
+.ens-lane.veto-winner .ens-gauge-needle-dot { fill: var(--umber); }
+
+/* Metronome sweep — vertical line traveling across the 3 lanes */
+.ens-metronome {
+  position: absolute;
+  top: 48px;
+  bottom: 80px;
+  left: 0;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(138, 90, 43, 0.35) 20%,
+    rgba(138, 90, 43, 0.35) 80%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 180ms var(--ease-std);
+  will-change: transform, opacity;
+}
+.ens-metronome.on { opacity: 1; }
+
+/* Gate: thin rule + small label, not a button */
+.ens-gate {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 18px 0 12px;
+  opacity: 0;
+  transition: opacity 280ms var(--ease-std);
+}
+.ens-gate.visible { opacity: 1; }
+.ens-gate-rule {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--ink-3), transparent);
+  opacity: 0.6;
+}
+.ens-gate-node {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--ink-2);
+  letter-spacing: 0.14em;
+  text-transform: lowercase;
+  padding: 3px 12px;
+  border: 1px solid var(--ink-3);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* Result action — make the final reveal bigger + more dramatic */
+.ens-result {
+  text-align: center;
+  padding: 16px 22px 18px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-muted);
+  transition: opacity 400ms var(--ease-std),
+              border-color 400ms var(--ease-std),
+              background 400ms var(--ease-std);
+  opacity: 0;
+}
+.ens-result.visible { opacity: 1; }
+.ens-result-label {
+  font-size: 9px;
+  color: var(--ink-3);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.ens-result-action {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 34px;
+  font-weight: 700;
+  color: var(--ink-0);
+  letter-spacing: -0.015em;
+  line-height: 1;
+  margin: 4px 0 6px;
+}
+.ens-result.hitl .ens-result-action { color: var(--umber); }
+.ens-result.hitl { border-color: var(--umber); background: #fcf6ee; }
+.ens-result.auto .ens-result-action { color: var(--ink-0); }
+.ens-result.deny .ens-result-action { color: var(--ink-2); }
+.ens-result-reason {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--ink-2);
+  letter-spacing: 0.02em;
+}
+
+/* vote box — mid-flicker candidate styling */
+.ens-vote-box.flickering {
+  border-style: dashed;
+  color: var(--ink-3);
+}
+
 .ens-controls {
   display: flex;
   align-items: center;

@@ -652,10 +652,18 @@
             <g id="ens-tokens" class="ens-tokens"></g>
           </svg>
 
+          <!-- metronome sweep line — horizontal cursor traveling L→R -->
+          <div class="ens-metronome" id="ens-metronome"></div>
+
           <div class="ens-lanes">
             <div class="ens-lane" data-lane="0">
               <div class="ens-lane-head">
                 <span class="ens-lane-label mono">planner · 1</span>
+                <svg class="ens-gauge" id="ens-gauge-0" viewBox="0 0 28 16" preserveAspectRatio="xMidYMid meet">
+                  <path class="ens-gauge-bg" d="M 3 13 A 10 10 0 0 1 25 13" />
+                  <path class="ens-gauge-fg" d="M 3 13 A 10 10 0 0 1 25 13" />
+                  <circle class="ens-gauge-needle-dot" cx="14" cy="13" r="1"/>
+                </svg>
                 <span class="ens-lane-dot" id="ens-dot-0"></span>
               </div>
               <div class="ens-lane-draft mono" id="ens-draft-0"></div>
@@ -667,6 +675,11 @@
             <div class="ens-lane" data-lane="1">
               <div class="ens-lane-head">
                 <span class="ens-lane-label mono">planner · 2</span>
+                <svg class="ens-gauge" id="ens-gauge-1" viewBox="0 0 28 16" preserveAspectRatio="xMidYMid meet">
+                  <path class="ens-gauge-bg" d="M 3 13 A 10 10 0 0 1 25 13" />
+                  <path class="ens-gauge-fg" d="M 3 13 A 10 10 0 0 1 25 13" />
+                  <circle class="ens-gauge-needle-dot" cx="14" cy="13" r="1"/>
+                </svg>
                 <span class="ens-lane-dot" id="ens-dot-1"></span>
               </div>
               <div class="ens-lane-draft mono" id="ens-draft-1"></div>
@@ -678,6 +691,11 @@
             <div class="ens-lane" data-lane="2">
               <div class="ens-lane-head">
                 <span class="ens-lane-label mono">planner · 3</span>
+                <svg class="ens-gauge" id="ens-gauge-2" viewBox="0 0 28 16" preserveAspectRatio="xMidYMid meet">
+                  <path class="ens-gauge-bg" d="M 3 13 A 10 10 0 0 1 25 13" />
+                  <path class="ens-gauge-fg" d="M 3 13 A 10 10 0 0 1 25 13" />
+                  <circle class="ens-gauge-needle-dot" cx="14" cy="13" r="1"/>
+                </svg>
                 <span class="ens-lane-dot" id="ens-dot-2"></span>
               </div>
               <div class="ens-lane-draft mono" id="ens-draft-2"></div>
@@ -690,7 +708,9 @@
 
           <!-- merge gate (thin label between lanes and result) -->
           <div class="ens-gate" id="ens-gate">
+            <div class="ens-gate-rule"></div>
             <div class="ens-gate-node mono">escalate-on-any</div>
+            <div class="ens-gate-rule"></div>
           </div>
 
           <!-- final locked action -->

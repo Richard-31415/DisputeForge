@@ -3771,13 +3771,18 @@
       const dot   = $(`#ens-dot-${i}`);
       const draft = $(`#ens-draft-${i}`);
       const spark = $(`#ens-spark-${i}`)?.querySelector('.ens-spark-line');
+      const gauge = document.querySelector(`#ens-gauge-${i} .ens-gauge-fg`);
       const lane  = document.querySelector(`.ens-lane[data-lane="${i}"]`);
       if (box)   { box.className = 'ens-vote-box'; box.textContent = '—'; }
       if (dot)   dot.className = 'ens-lane-dot';
       if (draft) draft.innerHTML = '';
       if (spark) spark.setAttribute('points', '');
+      if (gauge) gauge.setAttribute('stroke-dashoffset', '35');
       if (lane)  lane.classList.remove('locked', 'vetoed', 'veto-winner');
     }
+    // Metronome
+    const m = $('#ens-metronome');
+    if (m) { m.classList.remove('on'); m.style.transform = ''; }
     // DAG paths
     $$('.ens-tee-line, .ens-basin-line').forEach(p => {
       p.classList.remove('drawn', 'veto-winner', 'veto-losing', 'consensus');
@@ -3799,17 +3804,105 @@
 
   // --- small helpers for ensemble motion ---
 
-  // typewriter into a DOM element with an optional ".ens-caret"
-  function ensTypeInto(el, text, speedMs = 28) {
+  // typewriter into a DOM element. Caret shown during typing, removed after.
+  function ensTypeInto(el, text, speedMs = 28, { keepCaret = false } = {}) {
     return new Promise(res => {
       el.innerHTML = `<span class="ens-caret">&nbsp;</span>`;
       const caret = el.firstChild;
       let i = 0;
       const id = setInterval(() => {
-        if (i >= text.length) { clearInterval(id); res(); return; }
+        if (i >= text.length) {
+          clearInterval(id);
+          if (!keepCaret) caret.remove();
+          res();
+          return;
+        }
         caret.insertAdjacentText('beforebegin', text[i++]);
       }, speedMs);
     });
+  }
+
+  // Strip any caret from a draft element (used on lock so nothing blinks after).
+  function ensClearCaret(el) {
+    if (!el) return;
+    el.querySelectorAll('.ens-caret').forEach(c => c.remove());
+  }
+
+  // Candidate flicker — cycles the vote box through a pool of actions with
+  // geometric slowdown (120ms, 180, 270, 405…), settling on `finalLabel`.
+  // Feels like the planner is weighing options and locking one in.
+  function ensCandidateFlicker(box, pool, finalLabel, finalCls, totalMs = 900) {
+    if (!box) return Promise.resolve();
+    return new Promise(resolve => {
+      box.classList.add('flickering');
+      let t = 0;
+      let step = 90;
+      const start = nowMs();
+      function tick() {
+        const el = Math.random();
+        const choice = pool[Math.floor(Math.random() * pool.length)];
+        box.textContent = choice;
+        step = Math.min(320, step * 1.25);
+        const elapsed = nowMs() - start;
+        if (elapsed < totalMs) {
+          setTimeout(tick, step);
+        } else {
+          box.classList.remove('flickering');
+          box.textContent = finalLabel;
+          resolve();
+        }
+      }
+      tick();
+    });
+  }
+
+  // Animate the confidence gauge (stroke-dashoffset 0–35) for a lane.
+  // Returns a stop() closure; call it once the vote is ready to freeze.
+  function ensDriveGauge(laneIdx) {
+    const arc = document.querySelector(`#ens-gauge-${laneIdx} .ens-gauge-fg`);
+    if (!arc) return () => {};
+    const start = nowMs();
+    let stopped = false;
+    let lockedValue = null;
+    function tick() {
+      if (stopped) return;
+      const t = (nowMs() - start) / 1000;
+      // Conf climbs from 0 to ~0.85 over ~3s, with wobble
+      const base = 1 - Math.exp(-t * 0.7);
+      const wobble = (1 - base) * 0.3 * Math.sin(t * 11);
+      const conf = Math.max(0, Math.min(1, base * 0.85 + wobble * 0.15));
+      const off = 35 * (1 - conf);
+      arc.setAttribute('stroke-dashoffset', off.toFixed(1));
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+    return (final = 0.95) => {
+      stopped = true;
+      arc.setAttribute('stroke-dashoffset', (35 * (1 - final)).toFixed(1));
+    };
+  }
+
+  // Metronome sweep — a vertical umber rule that traverses the arena L→R,
+  // pulses each lane as it crosses. Returns a stop() closure.
+  function ensStartMetronome(arenaEl, periodMs = 2400) {
+    const m = document.getElementById('ens-metronome');
+    if (!m || !arenaEl) return () => {};
+    let stopped = false;
+    m.classList.add('on');
+    const start = nowMs();
+    function tick() {
+      if (stopped) { m.classList.remove('on'); return; }
+      const t = ((nowMs() - start) % periodMs) / periodMs;
+      const w = arenaEl.getBoundingClientRect().width;
+      m.style.transform = `translateX(${(w * t).toFixed(1)}px)`;
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+    return () => {
+      stopped = true;
+      m.classList.remove('on');
+      m.style.transform = '';
+    };
   }
 
   // fade the current draft to `.ens-struck` then clear it
@@ -3915,51 +4008,63 @@
     await ensTypeInto(promptEl, prompt, 18);
 
     // 2. Draw the top tee paths (CSS-only reveal; no getPointAtLength).
-    //    We skip token flow on the tee paths to avoid blocking the sequence
-    //    on any SVG-layout hiccups — the stroke-draw alone reads well.
     ['ens-tee-0', 'ens-tee-1', 'ens-tee-2'].forEach((id, i) => {
       setTimeout(() => document.getElementById(id)?.classList.add('drawn'), i * 90);
     });
-    await sleep(560);
+    await sleep(460);
 
-    // 3. Light up each planner and start the sparkline wobble + teletype draft
+    // 2b. Start the metronome sweep — a shared-clock tick across all lanes
+    const arena = document.querySelector('.ens-arena');
+    const stopMetronome = ensStartMetronome(arena, 2600);
+
+    // 3. Light up each planner; start sparklines + confidence gauges
     const stops = [];
+    const stopGauges = [];
     for (let i = 0; i < 3; i++) {
       $(`#ens-dot-${i}`).classList.add('thinking');
       stops[i] = ensStartSparkline(i);
+      stopGauges[i] = ensDriveGauge(i);
+      $(`#ens-vote-${i}`).textContent = '…';
     }
 
     // Asymmetric timing: staggered lane lock-in order
     const order = [1, 0, 2];                  // planner 2 finishes first, then 1, then 3
     const lockDelays = [0, 520, 1040];        // ms between lane lockings
 
-    // Kick off three concurrent "thinking" sequences.
-    // NOTE: plain async arrow functions — don't wrap in `new Promise(async…)`;
-    // that anti-pattern swallows errors silently and masked a bug earlier.
+    // Pool of candidate actions for the flicker (the "weighing options" moment)
+    const CANDIDATE_POOL = ['auto_refund', 'human_review', 'deny', '???', 'auto_refund', 'human_review'];
+
+    // Kick off three concurrent "thinking" sequences. Plain async arrows —
+    // don't wrap in `new Promise(async…)` (error-swallowing anti-pattern).
     const laneSeq = async (laneIdx, k) => {
-      await sleep(180 + laneIdx * 140);        // slight initial desynch
+      await sleep(180 + laneIdx * 140);
       const draftEl = $(`#ens-draft-${laneIdx}`);
       const [firstDraft, strikeIt, finalDraft] = drafts[laneIdx];
 
-      // type first draft
-      await ensTypeInto(draftEl, firstDraft, 24);
+      // type first draft (keep caret while typing)
+      await ensTypeInto(draftEl, firstDraft, 24, { keepCaret: true });
       await sleep(220);
       if (strikeIt) {
         await ensRedact(draftEl, 320);
         await sleep(80);
-        await ensTypeInto(draftEl, finalDraft, 22);
+        await ensTypeInto(draftEl, finalDraft, 22, { keepCaret: true });
       }
 
-      // Wait for this lane's lock slot (staggered)
+      // Wait for this lane's lock slot
       await sleep(lockDelays[k] + Math.random() * 140);
 
-      // Lock in: stop sparkline, set vote, spring-snap the box, mark dot done
-      stops[laneIdx]();
+      // Flicker through candidate actions before settling (dramatic moment)
       const [label, cls] = votes[laneIdx];
       const box = $(`#ens-vote-${laneIdx}`);
       const dot = $(`#ens-dot-${laneIdx}`);
       const lane = document.querySelector(`.ens-lane[data-lane="${laneIdx}"]`);
-      if (box) { box.className = 'ens-vote-box ' + cls + ' locked'; box.textContent = label; }
+      if (box) await ensCandidateFlicker(box, CANDIDATE_POOL, label, cls, 640);
+
+      // Finalize: stop sparkline + gauge, remove caret, style box, spring snap
+      stops[laneIdx]();
+      stopGauges[laneIdx](cls === 'fail' ? 0.35 : cls === 'hitl' ? 0.62 : 0.92);
+      ensClearCaret(draftEl);
+      if (box) box.className = 'ens-vote-box ' + cls + ' locked';
       if (dot) {
         dot.classList.remove('thinking');
         dot.classList.add(cls === 'hitl' ? 'hitl' : (cls === 'fail' ? 'fail' : 'done'));
@@ -3967,12 +4072,14 @@
       lane?.classList.add('locked');
       ensSpringSnap(box);
 
-      // Draw the basin path for this lane
+      // Draw this lane's basin path
       $(`#ens-basin-${laneIdx}`)?.classList.add('drawn');
     };
     await Promise.all(order.map((laneIdx, k) => laneSeq(laneIdx, k)));
 
-    await sleep(300);
+    // Stop the metronome — all planners have landed
+    stopMetronome();
+    await sleep(260);
 
     // 4. Show merge gate
     $('#ens-gate')?.classList.add('visible');
