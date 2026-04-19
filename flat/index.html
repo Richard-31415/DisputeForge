@@ -625,8 +625,9 @@
 
         <!-- three vote lanes + SVG merge overlay -->
         <div class="ens-arena">
-          <!-- DAG overlay: top tee fan-out + bottom merge basin, ink-bleed filter -->
-          <svg class="ens-dag" id="ens-dag" viewBox="0 0 900 520" preserveAspectRatio="none" aria-hidden="true">
+          <!-- Top tee fan-out only. ViewBox 900×80 matches the SVG's fixed
+               80px CSS height — no stretching, no bleed into the final card. -->
+          <svg class="ens-dag" id="ens-dag" viewBox="0 0 900 80" preserveAspectRatio="none" aria-hidden="true">
             <defs>
               <filter id="ink-bleed" x="-10%" y="-10%" width="120%" height="120%">
                 <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="3"/>
@@ -639,23 +640,20 @@
               <path id="ens-tee-1" class="ens-tee-line" d="M 450 12 C 450 60 450 60 450 80"/>
               <path id="ens-tee-2" class="ens-tee-line" d="M 450 12 C 450 40 750 40 750 80"/>
             </g>
-            <!-- Bottom merge basin: three lanes converge to one -->
+            <!-- Basin paths removed: gate pill + final-action card communicate
+                 merge clearly; path lines were bleeding into the result. -->
             <g class="ens-basin">
-              <path id="ens-basin-0" class="ens-basin-line" data-lane="0"
-                    d="M 150 330 C 150 420 450 420 450 500"/>
-              <path id="ens-basin-1" class="ens-basin-line" data-lane="1"
-                    d="M 450 330 C 450 420 450 420 450 500"/>
-              <path id="ens-basin-2" class="ens-basin-line" data-lane="2"
-                    d="M 750 330 C 750 420 450 420 450 500"/>
+              <path id="ens-basin-0" class="ens-basin-line" data-lane="0" d="M 0 0"/>
+              <path id="ens-basin-1" class="ens-basin-line" data-lane="1" d="M 0 0"/>
+              <path id="ens-basin-2" class="ens-basin-line" data-lane="2" d="M 0 0"/>
             </g>
             <!-- Animated token dots live here -->
             <g id="ens-tokens" class="ens-tokens"></g>
           </svg>
 
-          <!-- metronome sweep line — horizontal cursor traveling L→R -->
-          <div class="ens-metronome" id="ens-metronome"></div>
-
           <div class="ens-lanes">
+            <!-- metronome sweep line — only within lane area, not beyond -->
+            <div class="ens-metronome" id="ens-metronome"></div>
             <div class="ens-lane" data-lane="0">
               <div class="ens-lane-head">
                 <span class="ens-lane-label mono">planner · 1</span>

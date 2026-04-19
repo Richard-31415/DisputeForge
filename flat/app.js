@@ -4014,8 +4014,8 @@
     await sleep(460);
 
     // 2b. Start the metronome sweep — a shared-clock tick across all lanes
-    const arena = document.querySelector('.ens-arena');
-    const stopMetronome = ensStartMetronome(arena, 2600);
+    const lanesEl = document.querySelector('.ens-lanes');
+    const stopMetronome = ensStartMetronome(lanesEl, 2600);
 
     // 3. Light up each planner; start sparklines + confidence gauges
     const stops = [];
