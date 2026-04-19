@@ -3277,6 +3277,16 @@
     active:     null,
   };
 
+  // One-line description of each stage's purpose — shown when idle OR skipped,
+  // so the viewer always knows what that stage would have done.
+  const P8_PURPOSE = {
+    communicator: 'parses the raw dispute message → structured intent',
+    planner:      'retrieves Reg E policy + drafts an action plan',
+    executor:     'dispatches plan steps through registered tools',
+    evaluator:    'grades the plan against bright-line Reg E rules',
+    explainer:    'writes the customer-facing message + Reg E post-check',
+  };
+
   function p8ResetPipeline() {
     Object.keys(p8State.stageStart).forEach(k => delete p8State.stageStart[k]);
     Object.keys(p8State.replans).forEach(k => delete p8State.replans[k]);
@@ -3285,7 +3295,7 @@
     const pipe = $('#p8-pipeline');
     if (pipe) pipe.setAttribute('data-active', '');
 
-    // Reset each stage card + station
+    // Reset each stage card + station; each idle card shows its purpose.
     ['communicator', 'planner', 'executor', 'evaluator', 'explainer'].forEach(k => {
       const stage = document.getElementById(`p8-stage-${k}`);
       const body  = document.getElementById(`p8-body-${k}`);
@@ -3294,7 +3304,7 @@
       const glyph = document.getElementById(`p8-glyph-${k}`);
       if (stage) stage.setAttribute('data-status', 'idle');
       if (body)  body.innerHTML = '';
-      if (sum)   sum.textContent = '';
+      if (sum && P8_PURPOSE[k]) sum.textContent = P8_PURPOSE[k];
       if (time)  time.textContent = '—';
       if (glyph) glyph.textContent = '○';
     });
@@ -3427,6 +3437,29 @@
     }
   }
 
+  // Mark all stages that never transitioned out of idle as "skipped" with
+  // a human-readable reason. Called when the run finishes (complete/error).
+  function p8MarkSkipped(reason = 'not in this path') {
+    const order = ['communicator', 'planner', 'executor', 'evaluator', 'explainer'];
+    order.forEach(k => {
+      const stage = document.getElementById(`p8-stage-${k}`);
+      if (!stage) return;
+      if (stage.getAttribute('data-status') !== 'idle') return;
+      stage.setAttribute('data-status', 'skipped');
+      const glyph = document.getElementById(`p8-glyph-${k}`);
+      if (glyph) glyph.textContent = '—';
+      const body = document.getElementById(`p8-body-${k}`);
+      if (body && !body.innerHTML.trim()) {
+        body.innerHTML =
+          `<div class="p8-skipped-note"><span class="p8-skipped-tag mono">skipped</span> `
+          + `<span class="p8-skipped-reason">${escHtml(reason)}</span></div>`
+          + `<div class="p8-purpose">${escHtml(P8_PURPOSE[k] || '')}</div>`;
+      }
+      const time = document.getElementById(`p8-time-${k}`);
+      if (time) time.textContent = '—';
+    });
+  }
+
   // Short (~40 char) summary shown in the collapsed header
   function p8BuildSummary(node, delta, replanCount) {
     if (!delta) return '';
@@ -3545,6 +3578,14 @@
       p8CompleteStage(ev.node, ev.delta, replanCount);
       await sleep(140);
     }
+    // Any stage the demo skipped (e.g., adversarial → direct HITL) gets
+    // a clear "skipped" indicator rather than staying silently idle.
+    const last0 = seq[seq.length - 1];
+    const skipReason = last0 && last0.node === 'hitl'
+      ? 'routed directly to HITL'
+      : 'not invoked in this path';
+    p8MarkSkipped(skipReason);
+
     // synthesize a final customer-message card into explainer body
     const last = seq[seq.length - 1];
     if (last && last.delta && last.delta.final_response) {
@@ -3788,8 +3829,16 @@
               }
               msg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
+            // Any stage that never fired (e.g. communicator short-circuited
+            // straight to HITL on an injection) gets a "skipped" badge so
+            // the tab is never just an empty mystery.
+            const reason = action === 'human_review'
+              ? 'routed directly to HITL'
+              : 'not invoked in this path';
+            p8MarkSkipped(reason);
             p8SetStatus('pf-done', 'complete · ' + action + ' · ' + fmtMs(elapsed));
           } else if (evt.type === 'error') {
+            p8MarkSkipped('run errored before reaching this stage');
             p8SetStatus('pf-fail', 'error · ' + (evt.detail || 'unknown').slice(0, 60));
             toast('Agent error: ' + (evt.detail || 'unknown'), 'bad');
           }
@@ -3820,6 +3869,11 @@
         if (mchEl) mchEl.value = p.merchant;
       });
     });
+
+    // Paint idle purpose text on first mount so each stage head reads as
+    // "01 / communicator · parses the raw dispute message → structured intent"
+    // before any run starts.
+    p8ResetPipeline();
   }
 
   async function submitDispute() {

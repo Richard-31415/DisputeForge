@@ -30,13 +30,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-    # LangGraph
+# LangGraph
 langgraph = [
     "langgraph>=0.2.50",
     "langchain-anthropic>=0.3.0",
     "langchain-core>=0.3.0",
 ]
-    # Claude Agent SDK
+# Claude Agent SDK
 claude-sdk = [
     "claude-agent-sdk>=0.1.0",
     "inspect-ai>=0.3.0",

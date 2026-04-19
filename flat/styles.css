@@ -3033,6 +3033,56 @@ body[data-zoom-mode="zone"] .zone.current {
   border-color: var(--fail);
   opacity: 1;
 }
+.p8-stage[data-status="skipped"] {
+  opacity: 0.7;
+  border-style: dashed;
+  border-color: var(--ink-3);
+  background: var(--surface);
+}
+.p8-stage[data-status="skipped"] .p8-stage-glyph { color: var(--ink-3); }
+.p8-stage[data-status="skipped"] .p8-stage-name  { color: var(--ink-2); }
+
+/* Skipped body — small note + purpose description */
+.p8-skipped-note {
+  padding: 10px 0 6px;
+  font-size: 11px;
+  color: var(--ink-2);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.p8-skipped-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  border: 1px dashed var(--ink-3);
+  border-radius: 999px;
+  background: var(--surface);
+}
+.p8-skipped-reason {
+  font-style: italic;
+  color: var(--ink-2);
+}
+.p8-purpose {
+  padding: 4px 0 10px;
+  font-size: 11px;
+  color: var(--ink-3);
+  font-style: italic;
+  font-family: var(--font-sans);
+  line-height: 1.5;
+}
+
+/* Idle stages show their purpose in the header summary slot */
+.p8-stage[data-status="idle"] .p8-stage-summary {
+  color: var(--ink-3);
+  font-style: italic;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  letter-spacing: 0;
+}
 
 /* Stage header — always 44px, always the same shape. Not clickable
    (header text isn't interactive); we removed cursor:pointer to stop
@@ -3135,17 +3185,19 @@ body[data-zoom-mode="zone"] .zone.current {
   transition: opacity 360ms var(--ease-std), transform 360ms var(--ease-std);
 }
 .p8-stage-body:empty { padding: 0; }
-.p8-stage[data-status="active"] .p8-stage-body,
-.p8-stage[data-status="done"]   .p8-stage-body,
-.p8-stage[data-status="hitl"]   .p8-stage-body,
-.p8-stage[data-status="fail"]   .p8-stage-body {
+.p8-stage[data-status="active"]  .p8-stage-body,
+.p8-stage[data-status="done"]    .p8-stage-body,
+.p8-stage[data-status="hitl"]    .p8-stage-body,
+.p8-stage[data-status="fail"]    .p8-stage-body,
+.p8-stage[data-status="skipped"] .p8-stage-body {
   opacity: 1;
   transform: translateY(0);
 }
 /* Collapse the summary/time/glyph duplication: once body is visible the
    one-line collapsed summary would be redundant with the body itself. */
-.p8-stage[data-status="done"] .p8-stage-summary,
-.p8-stage[data-status="hitl"] .p8-stage-summary { display: none; }
+.p8-stage[data-status="done"]    .p8-stage-summary,
+.p8-stage[data-status="hitl"]    .p8-stage-summary,
+.p8-stage[data-status="skipped"] .p8-stage-summary { display: none; }
 
 /* Final dispatched-message card, appended inside explainer body */
 .p8-final-card {
