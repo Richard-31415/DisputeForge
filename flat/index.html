@@ -617,35 +617,80 @@
           <button class="btn btn-primary btn-sm" id="ens-run">▸ Simulate</button>
         </div>
 
-        <!-- three vote lanes -->
+        <!-- shared dispute prompt fed to all three planners -->
+        <div class="ens-prompt" id="ens-prompt">
+          <span class="ens-prompt-label mono">shared input</span>
+          <span class="ens-prompt-text" id="ens-prompt-text">—</span>
+        </div>
+
+        <!-- three vote lanes + SVG merge overlay -->
         <div class="ens-arena">
+          <!-- DAG overlay: top tee fan-out + bottom merge basin, ink-bleed filter -->
+          <svg class="ens-dag" id="ens-dag" viewBox="0 0 900 520" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <filter id="ink-bleed" x="-10%" y="-10%" width="120%" height="120%">
+                <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="3"/>
+                <feDisplacementMap in="SourceGraphic" scale="1.2"/>
+              </filter>
+            </defs>
+            <!-- Top tee: single centerline feeds three lanes -->
+            <g class="ens-tee">
+              <path id="ens-tee-0" class="ens-tee-line" d="M 450 12 C 450 40 150 40 150 80"/>
+              <path id="ens-tee-1" class="ens-tee-line" d="M 450 12 C 450 60 450 60 450 80"/>
+              <path id="ens-tee-2" class="ens-tee-line" d="M 450 12 C 450 40 750 40 750 80"/>
+            </g>
+            <!-- Bottom merge basin: three lanes converge to one -->
+            <g class="ens-basin">
+              <path id="ens-basin-0" class="ens-basin-line" data-lane="0"
+                    d="M 150 330 C 150 420 450 420 450 500"/>
+              <path id="ens-basin-1" class="ens-basin-line" data-lane="1"
+                    d="M 450 330 C 450 420 450 420 450 500"/>
+              <path id="ens-basin-2" class="ens-basin-line" data-lane="2"
+                    d="M 750 330 C 750 420 450 420 450 500"/>
+            </g>
+            <!-- Animated token dots live here -->
+            <g id="ens-tokens" class="ens-tokens"></g>
+          </svg>
+
           <div class="ens-lanes">
-            <div class="ens-lane">
-              <div class="ens-lane-label mono">Planner 1</div>
-              <div class="ens-spinner" id="ens-spin-0"></div>
+            <div class="ens-lane" data-lane="0">
+              <div class="ens-lane-head">
+                <span class="ens-lane-label mono">planner · 1</span>
+                <span class="ens-lane-dot" id="ens-dot-0"></span>
+              </div>
+              <div class="ens-lane-draft mono" id="ens-draft-0"></div>
+              <svg class="ens-sparkline" id="ens-spark-0" viewBox="0 0 80 20" preserveAspectRatio="none">
+                <polyline class="ens-spark-line" points=""/>
+              </svg>
               <div class="ens-vote-box" id="ens-vote-0">—</div>
             </div>
-            <div class="ens-lane-divider"></div>
-            <div class="ens-lane">
-              <div class="ens-lane-label mono">Planner 2</div>
-              <div class="ens-spinner" id="ens-spin-1"></div>
+            <div class="ens-lane" data-lane="1">
+              <div class="ens-lane-head">
+                <span class="ens-lane-label mono">planner · 2</span>
+                <span class="ens-lane-dot" id="ens-dot-1"></span>
+              </div>
+              <div class="ens-lane-draft mono" id="ens-draft-1"></div>
+              <svg class="ens-sparkline" id="ens-spark-1" viewBox="0 0 80 20" preserveAspectRatio="none">
+                <polyline class="ens-spark-line" points=""/>
+              </svg>
               <div class="ens-vote-box" id="ens-vote-1">—</div>
             </div>
-            <div class="ens-lane-divider"></div>
-            <div class="ens-lane">
-              <div class="ens-lane-label mono">Planner 3</div>
-              <div class="ens-spinner" id="ens-spin-2"></div>
+            <div class="ens-lane" data-lane="2">
+              <div class="ens-lane-head">
+                <span class="ens-lane-label mono">planner · 3</span>
+                <span class="ens-lane-dot" id="ens-dot-2"></span>
+              </div>
+              <div class="ens-lane-draft mono" id="ens-draft-2"></div>
+              <svg class="ens-sparkline" id="ens-spark-2" viewBox="0 0 80 20" preserveAspectRatio="none">
+                <polyline class="ens-spark-line" points=""/>
+              </svg>
               <div class="ens-vote-box" id="ens-vote-2">—</div>
             </div>
           </div>
 
-          <!-- merge gate -->
+          <!-- merge gate (thin label between lanes and result) -->
           <div class="ens-gate" id="ens-gate">
-            <div class="ens-gate-lines">
-              <div class="ens-gate-line"></div>
-              <div class="ens-gate-node">escalate-on-any</div>
-              <div class="ens-gate-line"></div>
-            </div>
+            <div class="ens-gate-node mono">escalate-on-any</div>
           </div>
 
           <!-- final locked action -->
