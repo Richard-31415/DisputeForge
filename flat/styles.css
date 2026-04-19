@@ -2887,7 +2887,305 @@ body[data-zoom-mode="zone"] .zone.current {
    Zone 08 — Pipeline deep trace
    ================================================================= */
 
-.zone-pipeline { gap: 0; display: flex; flex-direction: column; padding: 20px 22px 12px; overflow: hidden; }
+.zone-pipeline {
+  gap: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 22px 12px;
+  overflow: hidden;
+  /* Fill the zone body so the accordion has a real height to grow into */
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+/* =================================================================
+   Zone 08 — Pipeline: horizontal rail + flex-accordion stages.
+   - Exactly one stage is active at any time (flex: 1 1 0 → fills).
+   - Other stages collapse to 44px headers (flex: 0 0 44px).
+   - Overlap is structurally impossible because the sum of flex basis
+     values can't exceed the container height.
+   ================================================================= */
+.p8-pipeline {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding-top: 4px;
+}
+
+/* Rail header */
+.p8-rail {
+  flex: 0 0 62px;
+  width: 100%;
+  position: relative;
+  padding: 0 4px;
+}
+.p8-rail-svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.p8-rail-track {
+  stroke: rgba(15, 15, 14, 0.18);
+  stroke-width: 1.25;
+  vector-effect: non-scaling-stroke;
+}
+.p8-rail-track-fill {
+  stroke: var(--ink-0);
+  stroke-width: 1.4;
+  vector-effect: non-scaling-stroke;
+  transition: x2 520ms cubic-bezier(.22,1,.36,1);
+}
+.p8-station-dot {
+  fill: var(--bg);
+  stroke: rgba(15, 15, 14, 0.35);
+  stroke-width: 1.1;
+  vector-effect: non-scaling-stroke;
+  transition: fill 260ms var(--ease-std), stroke 260ms var(--ease-std);
+}
+.p8-station[data-status="done"] .p8-station-dot {
+  fill: var(--ink-0);
+  stroke: var(--ink-0);
+}
+.p8-station[data-status="active"] .p8-station-dot {
+  fill: var(--umber);
+  stroke: var(--umber);
+}
+.p8-station[data-status="hitl"] .p8-station-dot {
+  fill: var(--umber);
+  stroke: var(--umber);
+}
+.p8-station-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  fill: var(--ink-2);
+  text-anchor: middle;
+  letter-spacing: 0.08em;
+}
+.p8-station[data-status="active"] .p8-station-label,
+.p8-station[data-status="done"]  .p8-station-label { fill: var(--ink-0); }
+
+.p8-rail-dot {
+  fill: var(--umber);
+  transition: cx 520ms cubic-bezier(.22,1,.36,1),
+              fill 200ms var(--ease-std),
+              opacity 200ms var(--ease-std);
+  opacity: 0;
+}
+.p8-pipeline[data-active]:not([data-active=""]) .p8-rail-dot { opacity: 1; }
+
+.p8-rail-ring {
+  fill: none;
+  stroke: var(--umber);
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+  opacity: 0;
+  transition: cx 520ms cubic-bezier(.22,1,.36,1);
+}
+.p8-pipeline[data-active]:not([data-active=""]) .p8-rail-ring {
+  opacity: 0.6;
+  animation: p8RailBreathe 1.6s ease-in-out infinite;
+}
+@keyframes p8RailBreathe {
+  0%, 100% { r: 5;   opacity: 0.6; }
+  50%      { r: 10;  opacity: 0; }
+}
+
+/* Stage card — height is driven by JS (it computes the active stage's
+   height explicitly so the transition is reliable in all browsers). */
+.p8-stage {
+  flex: 0 0 auto;
+  /* No CSS height default — JS sets inline height every time a stage
+     transitions state, including the initial layout. Transition it
+     smoothly when it changes. */
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  transition:
+    height 460ms cubic-bezier(.22, 1, .36, 1),
+    opacity 260ms var(--ease-std),
+    border-color 260ms var(--ease-std),
+    background 260ms var(--ease-std);
+  opacity: 0.58;
+}
+.p8-stage[data-status="done"] {
+  opacity: 0.88;
+  border-color: var(--ink-3);
+  background: #fbfaf6;
+}
+.p8-stage[data-status="active"] {
+  opacity: 1;
+  border-color: var(--ink-0);
+  background: var(--surface);
+  box-shadow: 0 2px 4px rgba(15, 15, 14, 0.04);
+  /* height is set inline by JS — see p8LayoutActive() */
+}
+.p8-stage[data-status="hitl"] {
+  flex: 0 0 44px;
+  opacity: 0.95;
+  border-color: var(--umber);
+  background: #fcf6ee;
+}
+.p8-stage[data-status="fail"] {
+  border-color: var(--fail);
+  opacity: 0.9;
+}
+
+/* Stage header — always 44px, always the same shape */
+.p8-stage-head {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 16px;
+  gap: 12px;
+  flex-shrink: 0;
+  cursor: pointer;
+  user-select: none;
+}
+.p8-stage-num {
+  font-size: 10px;
+  color: var(--ink-3);
+  letter-spacing: 0.12em;
+  min-width: 20px;
+}
+.p8-stage[data-status="active"] .p8-stage-num,
+.p8-stage[data-status="done"]   .p8-stage-num { color: var(--ink-1); }
+
+.p8-stage-name {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 17px;
+  color: var(--ink-0);
+  font-weight: 700;
+  line-height: 1;
+}
+.p8-stage-sub {
+  font-family: var(--font-mono);
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--ink-3);
+  letter-spacing: 0.06em;
+  margin-left: 6px;
+}
+
+.p8-stage-dots {
+  flex: 1 1 auto;
+  height: 1px;
+  border-bottom: 1px dotted var(--ink-4);
+  margin: 0 4px;
+  opacity: 0.6;
+}
+
+.p8-stage-summary {
+  font-size: 11px;
+  color: var(--ink-2);
+  max-width: 55%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+.p8-stage[data-status="active"] .p8-stage-summary { display: none; }
+
+.p8-stage-time {
+  font-size: 10.5px;
+  color: var(--ink-2);
+  min-width: 42px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+.p8-stage[data-status="idle"] .p8-stage-time { opacity: 0.35; }
+.p8-stage[data-status="active"] .p8-stage-time { color: var(--umber); }
+
+.p8-stage-glyph {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--ink-3);
+  width: 16px;
+  text-align: center;
+  transition: color 200ms var(--ease-std), transform 260ms var(--ease-std);
+}
+.p8-stage[data-status="done"]   .p8-stage-glyph { color: var(--ink-0); }
+.p8-stage[data-status="active"] .p8-stage-glyph {
+  color: var(--umber);
+  animation: p8GlyphSpin 2.4s linear infinite;
+}
+.p8-stage[data-status="hitl"] .p8-stage-glyph { color: var(--umber); }
+.p8-stage[data-status="fail"] .p8-stage-glyph { color: var(--fail); }
+@keyframes p8GlyphSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Stage body — only visible when active; scrolls internally */
+.p8-stage-body {
+  padding: 2px 18px 16px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1 1 auto;
+  min-height: 0;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 320ms var(--ease-std), transform 320ms var(--ease-std);
+  transition-delay: 160ms;
+}
+.p8-stage[data-status="active"] .p8-stage-body {
+  opacity: 1;
+  transform: translateY(0);
+}
+.p8-stage-body::-webkit-scrollbar { width: 4px; }
+.p8-stage-body::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
+
+/* Final dispatched-message card, appended inside explainer body */
+.p8-final-card {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--ink-0);
+  border-radius: 4px;
+  background: var(--surface-muted);
+}
+.p8-final-card.hitl { border-left-color: var(--umber); background: #fcf6ee; }
+.p8-final-card.deny { border-left-color: var(--deny); }
+.p8-final-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 10px;
+}
+.p8-final-label {
+  color: var(--ink-3);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.p8-action-chip {
+  padding: 2px 8px;
+  border: 1px solid var(--ink-0);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-0);
+  letter-spacing: 0.02em;
+}
+.p8-action-chip.hitl { border-color: var(--umber); color: var(--umber); }
+.p8-action-chip.deny { border-color: var(--deny); color: var(--deny); }
+.p8-final-body {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--ink-0);
+}
+.p8-final-meta {
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+}
 .z-head-tight { margin-bottom: 10px; }
 .z-head-tight .z-title { font-size: 1.25rem; margin: 0; }
 

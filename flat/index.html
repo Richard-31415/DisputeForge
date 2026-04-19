@@ -569,22 +569,104 @@
           <span class="mono dim" id="p8-timer"></span>
         </div>
 
-        <!-- scrollable event log -->
-        <div class="p8-log" id="p8-log">
-          <div class="p8-idle">
-            <div class="p8-idle-nodes">
-              <span class="p8-idle-n">01 communicator</span>
-              <span class="p8-idle-arr">→</span>
-              <span class="p8-idle-n">02 planner + RAG</span>
-              <span class="p8-idle-arr">→</span>
-              <span class="p8-idle-n">03 executor</span>
-              <span class="p8-idle-arr">→</span>
-              <span class="p8-idle-n">04 evaluator</span>
-              <span class="p8-idle-arr">→</span>
-              <span class="p8-idle-n">05 explainer</span>
-            </div>
-            <p class="p8-idle-hint">Each card expands with live data as events arrive.</p>
+        <!-- Pipeline: horizontal rail header + 5 accordion stage cards.
+             Exactly one card is active at a time (fills remaining height);
+             the other four collapse to 44px headers. Overlap is structurally
+             impossible because active uses flex:1 and collapsed cards are
+             flex:0 0 44px. All content scrolls WITHIN the active card only. -->
+        <div class="p8-pipeline" id="p8-pipeline" data-active="">
+          <div class="p8-rail">
+            <svg class="p8-rail-svg" viewBox="0 0 800 58" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+              <line x1="60" y1="26" x2="740" y2="26" class="p8-rail-track"/>
+              <line x1="60" y1="26" x2="60" y2="26" class="p8-rail-track-fill" id="p8-rail-fill"/>
+              <g class="p8-stations">
+                <g class="p8-station" data-idx="0" data-stage="communicator">
+                  <circle cx="60"  cy="26" r="5" class="p8-station-dot"/>
+                  <text x="60"  y="52" class="p8-station-label">01</text>
+                </g>
+                <g class="p8-station" data-idx="1" data-stage="planner">
+                  <circle cx="230" cy="26" r="5" class="p8-station-dot"/>
+                  <text x="230" y="52" class="p8-station-label">02</text>
+                </g>
+                <g class="p8-station" data-idx="2" data-stage="executor">
+                  <circle cx="400" cy="26" r="5" class="p8-station-dot"/>
+                  <text x="400" y="52" class="p8-station-label">03</text>
+                </g>
+                <g class="p8-station" data-idx="3" data-stage="evaluator">
+                  <circle cx="570" cy="26" r="5" class="p8-station-dot"/>
+                  <text x="570" y="52" class="p8-station-label">04</text>
+                </g>
+                <g class="p8-station" data-idx="4" data-stage="explainer">
+                  <circle cx="740" cy="26" r="5" class="p8-station-dot"/>
+                  <text x="740" y="52" class="p8-station-label">05</text>
+                </g>
+              </g>
+              <!-- breathing ring around the active station -->
+              <circle id="p8-rail-ring" cx="60" cy="26" r="5" class="p8-rail-ring"/>
+              <!-- traveling dot -->
+              <circle id="p8-rail-dot" cx="60" cy="26" r="4.5" class="p8-rail-dot"/>
+            </svg>
           </div>
+
+          <article class="p8-stage" data-stage="communicator" data-status="idle" id="p8-stage-communicator">
+            <header class="p8-stage-head">
+              <span class="p8-stage-num mono">01</span>
+              <span class="p8-stage-name">communicator</span>
+              <span class="p8-stage-dots"></span>
+              <span class="p8-stage-summary mono" id="p8-sum-communicator"></span>
+              <span class="p8-stage-time mono" id="p8-time-communicator">—</span>
+              <span class="p8-stage-glyph" id="p8-glyph-communicator">○</span>
+            </header>
+            <div class="p8-stage-body" id="p8-body-communicator"></div>
+          </article>
+
+          <article class="p8-stage" data-stage="planner" data-status="idle" id="p8-stage-planner">
+            <header class="p8-stage-head">
+              <span class="p8-stage-num mono">02</span>
+              <span class="p8-stage-name">planner <span class="p8-stage-sub mono">+ RAG</span></span>
+              <span class="p8-stage-dots"></span>
+              <span class="p8-stage-summary mono" id="p8-sum-planner"></span>
+              <span class="p8-stage-time mono" id="p8-time-planner">—</span>
+              <span class="p8-stage-glyph" id="p8-glyph-planner">○</span>
+            </header>
+            <div class="p8-stage-body" id="p8-body-planner"></div>
+          </article>
+
+          <article class="p8-stage" data-stage="executor" data-status="idle" id="p8-stage-executor">
+            <header class="p8-stage-head">
+              <span class="p8-stage-num mono">03</span>
+              <span class="p8-stage-name">executor</span>
+              <span class="p8-stage-dots"></span>
+              <span class="p8-stage-summary mono" id="p8-sum-executor"></span>
+              <span class="p8-stage-time mono" id="p8-time-executor">—</span>
+              <span class="p8-stage-glyph" id="p8-glyph-executor">○</span>
+            </header>
+            <div class="p8-stage-body" id="p8-body-executor"></div>
+          </article>
+
+          <article class="p8-stage" data-stage="evaluator" data-status="idle" id="p8-stage-evaluator">
+            <header class="p8-stage-head">
+              <span class="p8-stage-num mono">04</span>
+              <span class="p8-stage-name">evaluator</span>
+              <span class="p8-stage-dots"></span>
+              <span class="p8-stage-summary mono" id="p8-sum-evaluator"></span>
+              <span class="p8-stage-time mono" id="p8-time-evaluator">—</span>
+              <span class="p8-stage-glyph" id="p8-glyph-evaluator">○</span>
+            </header>
+            <div class="p8-stage-body" id="p8-body-evaluator"></div>
+          </article>
+
+          <article class="p8-stage" data-stage="explainer" data-status="idle" id="p8-stage-explainer">
+            <header class="p8-stage-head">
+              <span class="p8-stage-num mono">05</span>
+              <span class="p8-stage-name">explainer</span>
+              <span class="p8-stage-dots"></span>
+              <span class="p8-stage-summary mono" id="p8-sum-explainer"></span>
+              <span class="p8-stage-time mono" id="p8-time-explainer">—</span>
+              <span class="p8-stage-glyph" id="p8-glyph-explainer">○</span>
+            </header>
+            <div class="p8-stage-body" id="p8-body-explainer"></div>
+          </article>
         </div>
       </div>
     </section>

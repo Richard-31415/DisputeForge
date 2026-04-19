@@ -223,6 +223,8 @@
     window.addEventListener('resize', () => {
       if (document.body.dataset.zoomMode === 'zone') enterZone(currentZoneIdx);
       else enterOverview();
+      // Zone 8 accordion heights are JS-driven — re-run layout on resize
+      if (typeof p8LayoutActive === 'function') p8LayoutActive();
     });
   }
 
@@ -3258,57 +3260,325 @@
     if (phase) phase.textContent = text;
   }
 
-  function p8ResetLog() {
-    const log = $('#p8-log');
-    if (!log) return;
-    log.innerHTML = `<div class="p8-idle">
-      <div class="p8-idle-nodes">
-        <span class="p8-idle-n">01 communicator</span><span class="p8-idle-arr">→</span>
-        <span class="p8-idle-n">02 planner + RAG</span><span class="p8-idle-arr">→</span>
-        <span class="p8-idle-n">03 executor</span><span class="p8-idle-arr">→</span>
-        <span class="p8-idle-n">04 evaluator</span><span class="p8-idle-arr">→</span>
-        <span class="p8-idle-n">05 explainer</span>
-      </div>
-      <p class="p8-idle-hint">Each card expands with live data as events arrive.</p>
-    </div>`;
+  // Station index map for the horizontal rail
+  const P8_STAGE_IDX = {
+    communicator: 0, planner: 1, executor: 2, evaluator: 3, explainer: 4, hitl: 4,
+  };
+  // Station x positions in the rail SVG viewBox (0 0 800 58)
+  const P8_STATION_X = [60, 230, 400, 570, 740];
+
+  // Per-stage state we track across a run
+  const p8State = {
+    stageStart: {}, // stage → start ms
+    replans:    {}, // stage → count
+    active:     null,
+  };
+
+  function p8ResetPipeline() {
+    Object.keys(p8State.stageStart).forEach(k => delete p8State.stageStart[k]);
+    Object.keys(p8State.replans).forEach(k => delete p8State.replans[k]);
+    p8State.active = null;
+
+    const pipe = $('#p8-pipeline');
+    if (pipe) pipe.setAttribute('data-active', '');
+
+    // Reset each stage card + station
+    ['communicator', 'planner', 'executor', 'evaluator', 'explainer'].forEach(k => {
+      const stage = document.getElementById(`p8-stage-${k}`);
+      const body  = document.getElementById(`p8-body-${k}`);
+      const sum   = document.getElementById(`p8-sum-${k}`);
+      const time  = document.getElementById(`p8-time-${k}`);
+      const glyph = document.getElementById(`p8-glyph-${k}`);
+      if (stage) stage.setAttribute('data-status', 'idle');
+      if (body)  body.innerHTML = '';
+      if (sum)   sum.textContent = '';
+      if (time)  time.textContent = '—';
+      if (glyph) glyph.textContent = '○';
+    });
+    document.querySelectorAll('.p8-station').forEach(s => s.setAttribute('data-status', 'idle'));
+
+    // Reset rail dot + fill
+    const dot  = $('#p8-rail-dot');
+    const ring = $('#p8-rail-ring');
+    const fill = $('#p8-rail-fill');
+    if (dot)  dot.setAttribute('cx', P8_STATION_X[0]);
+    if (ring) ring.setAttribute('cx', P8_STATION_X[0]);
+    if (fill) fill.setAttribute('x2', P8_STATION_X[0]);
+
+    // Clear any inline heights so cards return to their 44px CSS default
+    document.querySelectorAll('.p8-stage').forEach(s => { s.style.height = ''; });
   }
 
-  function p8EnsureCard(nodeId, label) {
-    const log = $('#p8-log');
-    if (!log) return null;
-    const idleEl = log.querySelector('.p8-idle');
-    if (idleEl) idleEl.remove();
-    let card = $(`#p8-card-${nodeId}`);
-    if (!card) {
-      card = document.createElement('div');
-      card.className = 'p8-card p8-card-active';
-      card.id = `p8-card-${nodeId}`;
-      card.innerHTML = `
-        <div class="p8-card-head">
-          <span class="p8-card-role">${escHtml(label)}</span>
-          <span class="p8-card-badge p8-running">running…</span>
-        </div>
-        <div class="p8-card-body" id="p8-body-${nodeId}"></div>`;
-      log.appendChild(card);
-      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  // Compute and apply explicit heights: active stage gets remaining space,
+  // others get 44px. Called any time a stage activates/completes.
+  function p8LayoutActive() {
+    const pipe = $('#p8-pipeline');
+    if (!pipe) return;
+    const stages = Array.from(pipe.querySelectorAll('.p8-stage'));
+    if (!stages.length) return;
+    const pipeH = pipe.clientHeight || pipe.getBoundingClientRect().height;
+    const rail = pipe.querySelector('.p8-rail');
+    const railH = rail ? (rail.getBoundingClientRect().height || 62) : 62;
+    // gap is 6px × (5 gaps between rail + 5 stages = 5)
+    const gaps = 6 * 5;
+    const collapsedH = 44;
+    const activeStage = stages.find(s => s.getAttribute('data-status') === 'active');
+    const others = stages.filter(s => s !== activeStage);
+    if (activeStage) {
+      const remaining = Math.max(120, pipeH - railH - gaps - others.length * collapsedH);
+      activeStage.style.height = remaining + 'px';
     }
-    return card;
+    others.forEach(s => { s.style.height = collapsedH + 'px'; });
   }
 
-  function p8FillCard(nodeId, delta, replanCount) {
-    const card = $(`#p8-card-${nodeId}`);
-    if (!card) return;
+  // Activate a stage: collapse any currently-active one (marking it "done"
+  // only if it has content already), expand this one, advance the rail.
+  function p8ActivateStage(nodeId) {
+    if (!P8_STAGE_IDX.hasOwnProperty(nodeId)) return;
+    const key = nodeId === 'hitl' ? 'explainer' : nodeId;
+    const stage = document.getElementById(`p8-stage-${key}`);
+    if (!stage) return;
+
+    // Record start time
+    p8State.stageStart[key] = nowMs();
+    p8State.active = key;
+
+    // Demote any currently-active stage (that has data) to "done"
+    document.querySelectorAll('.p8-stage[data-status="active"]').forEach(el => {
+      const okey = el.getAttribute('data-stage');
+      if (okey !== key) {
+        // If the stage body is empty, leave as idle so its content can fill it later.
+        const body = document.getElementById(`p8-body-${okey}`);
+        el.setAttribute('data-status', body && body.innerHTML.trim() ? 'done' : 'idle');
+      }
+    });
+
+    // Activate this one
+    stage.setAttribute('data-status', 'active');
+
+    // Update rail
+    const idx = P8_STAGE_IDX[nodeId];
+    const x = P8_STATION_X[idx];
+    const dot  = $('#p8-rail-dot');
+    const ring = $('#p8-rail-ring');
+    const fill = $('#p8-rail-fill');
+    if (dot)  dot.setAttribute('cx', x);
+    if (ring) ring.setAttribute('cx', x);
+    if (fill) fill.setAttribute('x2', x);
+    $('#p8-pipeline')?.setAttribute('data-active', key);
+
+    document.querySelectorAll('.p8-station').forEach(s => {
+      const sIdx = parseInt(s.getAttribute('data-idx'), 10);
+      s.setAttribute('data-status',
+        sIdx < idx ? 'done' : sIdx === idx ? 'active' : 'idle');
+    });
+
+    // Icon = spinning while active
+    const glyph = document.getElementById(`p8-glyph-${key}`);
+    if (glyph) glyph.textContent = '◐';
+
+    // Keep the elapsed timer ticking in the header while active
+    if (stage._tickId) clearInterval(stage._tickId);
+    stage._tickId = setInterval(() => {
+      const t = document.getElementById(`p8-time-${key}`);
+      if (t) t.textContent = fmtMs(nowMs() - p8State.stageStart[key]);
+    }, 100);
+
+    // WAAPI soft entrance on the body
+    const body = document.getElementById(`p8-body-${key}`);
+    if (body && body.animate) {
+      body.animate([
+        { opacity: 0, transform: 'translateY(6px)' },
+        { opacity: 1, transform: 'translateY(0)'  },
+      ], { duration: 400, delay: 160, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'both' });
+    }
+
+    // Re-layout heights so the newly-active stage fills the remaining space
+    p8LayoutActive();
+  }
+
+  // Finalize a stage: populate its body with structured content, mark it done,
+  // derive a short summary for its collapsed header, stop the tick timer.
+  function p8CompleteStage(nodeId, delta, replanCount) {
+    const key = nodeId === 'hitl' ? 'explainer' : nodeId;
+    const stage = document.getElementById(`p8-stage-${key}`);
+    const body  = document.getElementById(`p8-body-${key}`);
+    const sum   = document.getElementById(`p8-sum-${key}`);
+    const glyph = document.getElementById(`p8-glyph-${key}`);
+    if (!stage) return;
+
     const isHitl = (delta && delta.requires_hitl) || nodeId === 'hitl';
-    card.classList.remove('p8-card-active');
-    card.classList.add(isHitl ? 'p8-card-hitl' : 'p8-card-done');
-    const badge = card.querySelector('.p8-card-badge');
-    if (badge) {
-      badge.className = 'p8-card-badge ' + (isHitl ? 'p8-warn' : 'p8-ok');
-      badge.textContent = isHitl ? 'hitl' : 'done';
+    const isReplan = key === 'evaluator' && delta && delta.evaluator_verdict
+      && !delta.evaluator_verdict.passed && !delta.requires_hitl;
+
+    if (stage._tickId) { clearInterval(stage._tickId); stage._tickId = null; }
+    const elapsed = nowMs() - (p8State.stageStart[key] || nowMs());
+    const t = document.getElementById(`p8-time-${key}`);
+    if (t) t.textContent = fmtMs(elapsed);
+
+    if (body && delta) body.innerHTML = p8BuildBody(nodeId, delta, replanCount);
+
+    // Status + glyph
+    if (isHitl) {
+      stage.setAttribute('data-status', 'hitl');
+      if (glyph) glyph.textContent = '!';
+    } else if (isReplan) {
+      // Keep evaluator collapsed but marked — planner will re-activate
+      stage.setAttribute('data-status', 'done');
+      if (glyph) glyph.textContent = '↺';
+      p8State.replans[key] = (p8State.replans[key] || 0) + 1;
+    } else {
+      stage.setAttribute('data-status', 'done');
+      if (glyph) glyph.textContent = '✓';
     }
-    const body = $(`#p8-body-${nodeId}`);
-    if (!body || !delta) return;
-    body.innerHTML = p8BuildBody(nodeId, delta, replanCount);
+
+    // One-line summary for the collapsed header
+    if (sum) sum.textContent = p8BuildSummary(nodeId, delta, replanCount);
+
+    // If this stage was active and is now done, let the layout recalculate.
+    if (!isHitl && !isReplan) {
+      stage.style.height = '';   // revert to CSS 44px
+      p8LayoutActive();
+    }
+  }
+
+  // Short (~40 char) summary shown in the collapsed header
+  function p8BuildSummary(node, delta, replanCount) {
+    if (!delta) return '';
+    if (delta.requires_hitl || node === 'hitl') {
+      return 'escalate · ' + ((delta.hitl_reason || '').slice(0, 30));
+    }
+    if (node === 'communicator') {
+      const i = delta.intent || {};
+      return (i.dispute_type || 'unknown') +
+             (i.confidence != null ? ` · conf ${(+i.confidence).toFixed(2)}` : '');
+    }
+    if (node === 'planner') {
+      const a = delta.intent?.proposed_action || '—';
+      const n = (delta.plan || []).length;
+      return `${a} · ${n} step${n === 1 ? '' : 's'}`;
+    }
+    if (node === 'executor') {
+      const r = delta.tool_results || [];
+      const ok = r.filter(x => x.status === 'ok').length;
+      return `${ok}/${r.length} tools ok`;
+    }
+    if (node === 'evaluator') {
+      const v = delta.evaluator_verdict || {};
+      if (v.passed) return 'passed · 4 checks';
+      return `replan #${delta.replan_count || replanCount || 1}`;
+    }
+    if (node === 'explainer') {
+      const a = delta.action_taken || '—';
+      return a;
+    }
+    return '';
+  }
+
+  // Backwards-compat shims for the old names used in the event handler.
+  function p8ResetLog() { p8ResetPipeline(); }
+  function p8EnsureCard(nodeId /*, label */) { p8ActivateStage(nodeId); }
+  function p8FillCard(nodeId, delta, replanCount) { p8CompleteStage(nodeId, delta, replanCount); }
+
+  // Mock event sequences for screenshot / offline demo (no API calls)
+  const P8_DEMO_SEQ = {
+    small_fraud: [
+      { node: 'communicator', delay: 900, delta: { intent: {
+        dispute_type: 'unauthorized', confidence: 0.94, claim: 'never heard of the merchant' } }},
+      { node: 'planner', delay: 1800, delta: {
+        policy_context: 'Reg E § 1005.11 …'.padEnd(12000, ' '),
+        intent: { proposed_action: 'auto_refund' },
+        plan: [
+          { step: 1, tool: 'fetch_transaction', rationale: 'confirm merchant + amount' },
+          { step: 2, tool: 'issue_provisional_credit', rationale: 'amount ≤ $50 threshold' },
+          { step: 3, tool: 'open_investigation', rationale: 'standard Reg E investigation' },
+          { step: 4, tool: 'notify_customer', rationale: 'confirm credit + 10-day window' },
+        ] }},
+      { node: 'executor', delay: 1200, delta: { tool_results: [
+        { tool: 'fetch_transaction', status: 'ok', content: '{ merchant: SketchyGadgets, amt: 24.99, date: 2026-04-12 }' },
+        { tool: 'issue_provisional_credit', status: 'ok', content: '{ credit: 24.99, ref: pc_8a2c }' },
+        { tool: 'open_investigation', status: 'ok', content: '{ inv_id: inv_7193, sla_days: 10 }' },
+        { tool: 'notify_customer', status: 'ok', content: '{ sent: true, channel: email }' },
+      ] }},
+      { node: 'evaluator', delay: 800, delta: {
+        evaluator_verdict: { passed: true, feedback: '' } }},
+      { node: 'explainer', delay: 1400, delta: {
+        action_taken: 'auto_refund',
+        snapshot_id: 'b6a32cf89195',
+        final_response: {
+          customer_message:
+            "We've issued a provisional credit of $24.99 while we open an investigation. You'll hear back within 10 business days.",
+          provisional_credit_amount: 24.99,
+          investigation_timeline_days: 10,
+        } }},
+    ],
+    big_fraud: [
+      { node: 'communicator', delay: 900, delta: { intent: {
+        dispute_type: 'unauthorized', confidence: 0.92, claim: 'overseas charges I never used' } }},
+      { node: 'planner', delay: 1700, delta: {
+        policy_context: 'Reg E § 1005.11 …'.padEnd(12000, ' '),
+        intent: { proposed_action: 'auto_refund' },
+        plan: [
+          { step: 1, tool: 'fetch_transaction', rationale: 'confirm merchant + amount' },
+          { step: 2, tool: 'issue_provisional_credit', rationale: 'reg_e applies' },
+        ] }},
+      { node: 'executor', delay: 1100, delta: { tool_results: [
+        { tool: 'fetch_transaction', status: 'ok', content: '{ merchant: OverseasSite, amt: 842.00 }' },
+      ] }},
+      { node: 'evaluator', delay: 700, delta: {
+        evaluator_verdict: { passed: false, feedback: 'amount > $50 threshold — escalate' },
+        requires_hitl: true,
+        hitl_reason: 'amount_exceeds_hitl_threshold',
+      }},
+      { node: 'hitl', delay: 400, delta: {
+        requires_hitl: true,
+        hitl_reason: 'amount_exceeds_hitl_threshold',
+      }},
+    ],
+    injection: [
+      { node: 'communicator', delay: 120, delta: {
+        requires_hitl: true,
+        hitl_reason: 'adversarial_marker:"ignore previous instructions"',
+      }},
+      { node: 'hitl', delay: 220, delta: {
+        requires_hitl: true,
+        hitl_reason: 'adversarial_marker',
+      }},
+    ],
+  };
+
+  async function p8PlayDemo(scenario = 'small_fraud') {
+    const seq = P8_DEMO_SEQ[scenario] || P8_DEMO_SEQ.small_fraud;
+    p8State.active = null;
+    p8ResetPipeline();
+    p8SetStatus('pf-running', 'demo · ' + scenario);
+    const start = nowMs();
+    let replanCount = 0;
+    for (const ev of seq) {
+      p8ActivateStage(ev.node);
+      await sleep(ev.delay);
+      p8CompleteStage(ev.node, ev.delta, replanCount);
+      await sleep(140);
+    }
+    // synthesize a final customer-message card into explainer body
+    const last = seq[seq.length - 1];
+    if (last && last.delta && last.delta.final_response) {
+      const fr = last.delta.final_response;
+      const body = $('#p8-body-explainer');
+      if (body) {
+        const msg = document.createElement('div');
+        msg.className = 'p8-final-card';
+        msg.innerHTML = `
+          <div class="p8-final-head">
+            <span class="p8-final-label mono">dispatched</span>
+            <span class="p8-action-chip">${escHtml(last.delta.action_taken || 'auto_refund')}</span>
+            <span class="mono dim">${fmtMs(nowMs() - start)}</span>
+          </div>
+          <div class="p8-final-body">${escHtml(fr.customer_message || '')}</div>`;
+        body.appendChild(msg);
+      }
+    }
+    p8SetStatus('pf-done', 'demo complete · ' + fmtMs(nowMs() - start));
   }
 
   function row(lbl, val, cls = '') {
@@ -3488,24 +3758,34 @@
             const fr = fs.final_response || {};
             const action = fs.action_taken || 'pending';
             const elapsed = nowMs() - start;
-            const log = $('#p8-log');
-            if (log) {
-              const msgCard = document.createElement('div');
+            // Append final customer-facing message into the explainer body so
+            // everything still fits inside the flex-accordion (no new cards
+            // that could overflow below).
+            const body = $('#p8-body-explainer');
+            if (body) {
               const ac = action === 'auto_refund' ? '' : (action === 'human_review' ? ' hitl' : ' deny');
-              msgCard.className = `p8-message-card${ac}`;
-              msgCard.innerHTML = `
-                <div class="p8-message-head">
+              const msg = document.createElement('div');
+              msg.className = 'p8-final-card' + ac;
+              msg.innerHTML = `
+                <div class="p8-final-head">
+                  <span class="p8-final-label mono">dispatched</span>
                   <span class="p8-action-chip${ac}">${escHtml(action)}</span>
                   <span class="mono dim">${fmtMs(elapsed)}</span>
                 </div>
-                <div class="p8-message-body">${escHtml(fr.customer_message || '(no message)')}</div>
-                <div class="p8-message-meta">
+                <div class="p8-final-body">${escHtml(fr.customer_message || '(no message)')}</div>
+                <div class="p8-final-meta mono">
                   ${fr.provisional_credit_amount != null ? `credit $${fr.provisional_credit_amount}` : ''}
-                  ${fr.investigation_timeline_days != null ? `· ${fr.investigation_timeline_days}d investigation` : ''}
-                  ${fs.snapshot_id ? `· snap:${fs.snapshot_id.slice(0,10)}` : ''}
+                  ${fr.investigation_timeline_days != null ? ` · ${fr.investigation_timeline_days}d investigation` : ''}
+                  ${fs.snapshot_id ? ` · snap:${fs.snapshot_id.slice(0,10)}` : ''}
                 </div>`;
-              log.appendChild(msgCard);
-              msgCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+              body.appendChild(msg);
+              if (msg.animate) {
+                msg.animate([
+                  { opacity: 0, transform: 'translateY(8px)' },
+                  { opacity: 1, transform: 'translateY(0)' },
+                ], { duration: 420, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'both' });
+              }
+              msg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
             p8SetStatus('pf-done', 'complete · ' + action + ' · ' + fmtMs(elapsed));
           } else if (evt.type === 'error') {
@@ -4183,7 +4463,7 @@
     //   #zone-7?hover=memory       jump + force-hover a zone-7 slab (debug)
     const hashZone = () => {
       const hash = window.location.hash || '';
-      const m = /^#zone-(\d{1,2})(?:\?(play|bubble|hover|sim)=([a-z_]+))?$/.exec(hash);
+      const m = /^#zone-(\d{1,2})(?:\?(play|bubble|hover|sim|demo|active)=([a-z_]+))?$/.exec(hash);
       if (m) {
         const idx = Math.max(0, Math.min(9, parseInt(m[1], 10) - 1));
         enterZone(idx);
@@ -4198,6 +4478,33 @@
         else if (m[2] === 'sim') {
           setTimeout(() => {
             if (typeof simulateEnsemble === 'function') simulateEnsemble(m[3]);
+          }, 400);
+        }
+        else if (m[2] === 'demo') {
+          setTimeout(() => {
+            if (typeof p8PlayDemo === 'function') p8PlayDemo(m[3]);
+          }, 400);
+        }
+        else if (m[2] === 'active') {
+          // Freeze a specific Zone 8 stage as active, with mock content,
+          // for screenshot verification of the accordion expansion.
+          setTimeout(() => {
+            if (typeof p8ActivateStage !== 'function') return;
+            const node = m[3];
+            p8ActivateStage(node);
+            const body = document.getElementById(`p8-body-${node}`);
+            if (body && node === 'planner') {
+              body.innerHTML = p8BuildBody('planner', {
+                policy_context: 'x'.repeat(12000),
+                intent: { proposed_action: 'auto_refund' },
+                plan: [
+                  { step: 1, tool: 'fetch_transaction', rationale: 'confirm merchant + amount' },
+                  { step: 2, tool: 'issue_provisional_credit', rationale: 'amount ≤ $50' },
+                  { step: 3, tool: 'open_investigation', rationale: 'standard Reg E' },
+                  { step: 4, tool: 'notify_customer', rationale: '10-day window' },
+                ],
+              }, 0);
+            }
           }, 400);
         }
         else if (m[2] === 'play') setTimeout(() => playScenario(m[3]), 450);
