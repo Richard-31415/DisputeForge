@@ -3309,27 +3309,9 @@
     document.querySelectorAll('.p8-stage').forEach(s => { s.style.height = ''; });
   }
 
-  // Compute and apply explicit heights: active stage gets remaining space,
-  // others get 44px. Called any time a stage activates/completes.
-  function p8LayoutActive() {
-    const pipe = $('#p8-pipeline');
-    if (!pipe) return;
-    const stages = Array.from(pipe.querySelectorAll('.p8-stage'));
-    if (!stages.length) return;
-    const pipeH = pipe.clientHeight || pipe.getBoundingClientRect().height;
-    const rail = pipe.querySelector('.p8-rail');
-    const railH = rail ? (rail.getBoundingClientRect().height || 62) : 62;
-    // gap is 6px × (5 gaps between rail + 5 stages = 5)
-    const gaps = 6 * 5;
-    const collapsedH = 44;
-    const activeStage = stages.find(s => s.getAttribute('data-status') === 'active');
-    const others = stages.filter(s => s !== activeStage);
-    if (activeStage) {
-      const remaining = Math.max(120, pipeH - railH - gaps - others.length * collapsedH);
-      activeStage.style.height = remaining + 'px';
-    }
-    others.forEach(s => { s.style.height = collapsedH + 'px'; });
-  }
+  // No-op: we no longer compute heights by hand. Stages are content-sized
+  // inside a scrollable container, so every stage's output stays visible.
+  function p8LayoutActive() { /* intentionally empty */ }
 
   // Activate a stage: collapse any currently-active one (marking it "done"
   // only if it has content already), expand this one, advance the rail.

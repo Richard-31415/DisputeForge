@@ -2900,27 +2900,34 @@ body[data-zoom-mode="zone"] .zone.current {
 }
 
 /* =================================================================
-   Zone 08 — Pipeline: horizontal rail + flex-accordion stages.
-   - Exactly one stage is active at any time (flex: 1 1 0 → fills).
-   - Other stages collapse to 44px headers (flex: 0 0 44px).
-   - Overlap is structurally impossible because the sum of flex basis
-     values can't exceed the container height.
+   Zone 08 — Pipeline: horizontal rail + scrollable stack of stages.
+   - Rail is sticky at the top (always visible while you scroll).
+   - Each card sizes to its content (no forced accordion).
+   - The stack scrolls inside the zone card.
    ================================================================= */
 .p8-pipeline {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   flex: 1 1 auto;
   min-height: 0;
   padding-top: 4px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
 }
+.p8-pipeline::-webkit-scrollbar { width: 5px; }
+.p8-pipeline::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
 
-/* Rail header */
+/* Rail header — sticks at top while the stages scroll */
 .p8-rail {
   flex: 0 0 62px;
   width: 100%;
-  position: relative;
-  padding: 0 4px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: linear-gradient(to bottom, var(--surface) 0%, var(--surface) 72%, rgba(255,255,255,0) 100%);
+  padding: 0 4px 8px;
 }
 .p8-rail-svg { width: 100%; height: 100%; display: block; overflow: visible; }
 .p8-rail-track {
@@ -2989,13 +2996,11 @@ body[data-zoom-mode="zone"] .zone.current {
   50%      { r: 10;  opacity: 0; }
 }
 
-/* Stage card — height is driven by JS (it computes the active stage's
-   height explicitly so the transition is reliable in all browsers). */
+/* Stage card — sizes to its content. Idle cards are header-only; as a
+   stage finishes it keeps its full body visible so the reader can read
+   every phase's output. Container scrolls if totals exceed zone height. */
 .p8-stage {
   flex: 0 0 auto;
-  /* No CSS height default — JS sets inline height every time a stage
-     transitions state, including the initial layout. Transition it
-     smoothly when it changes. */
   overflow: hidden;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -3003,36 +3008,35 @@ body[data-zoom-mode="zone"] .zone.current {
   display: flex;
   flex-direction: column;
   transition:
-    height 460ms cubic-bezier(.22, 1, .36, 1),
-    opacity 260ms var(--ease-std),
-    border-color 260ms var(--ease-std),
-    background 260ms var(--ease-std);
-  opacity: 0.58;
+    opacity 300ms var(--ease-std),
+    border-color 300ms var(--ease-std),
+    background 300ms var(--ease-std);
+  opacity: 0.55;
 }
 .p8-stage[data-status="done"] {
-  opacity: 0.88;
+  opacity: 1;
   border-color: var(--ink-3);
-  background: #fbfaf6;
+  background: var(--surface);
 }
 .p8-stage[data-status="active"] {
   opacity: 1;
   border-color: var(--ink-0);
   background: var(--surface);
   box-shadow: 0 2px 4px rgba(15, 15, 14, 0.04);
-  /* height is set inline by JS — see p8LayoutActive() */
 }
 .p8-stage[data-status="hitl"] {
-  flex: 0 0 44px;
-  opacity: 0.95;
+  opacity: 1;
   border-color: var(--umber);
   background: #fcf6ee;
 }
 .p8-stage[data-status="fail"] {
   border-color: var(--fail);
-  opacity: 0.9;
+  opacity: 1;
 }
 
-/* Stage header — always 44px, always the same shape */
+/* Stage header — always 44px, always the same shape. Not clickable
+   (header text isn't interactive); we removed cursor:pointer to stop
+   advertising an affordance that wasn't there. */
 .p8-stage-head {
   display: flex;
   align-items: center;
@@ -3041,7 +3045,6 @@ body[data-zoom-mode="zone"] .zone.current {
   padding: 0 16px;
   gap: 12px;
   flex-shrink: 0;
-  cursor: pointer;
   user-select: none;
 }
 .p8-stage-num {
@@ -3121,24 +3124,28 @@ body[data-zoom-mode="zone"] .zone.current {
   to   { transform: rotate(360deg); }
 }
 
-/* Stage body — only visible when active; scrolls internally */
+/* Stage body — visible once it has content. Hidden for idle stages
+   (the :empty check avoids an empty padding strip below the header). */
 .p8-stage-body {
   padding: 2px 18px 16px;
-  overflow-y: auto;
-  overflow-x: hidden;
   flex: 1 1 auto;
   min-height: 0;
   opacity: 0;
   transform: translateY(4px);
-  transition: opacity 320ms var(--ease-std), transform 320ms var(--ease-std);
-  transition-delay: 160ms;
+  transition: opacity 360ms var(--ease-std), transform 360ms var(--ease-std);
 }
-.p8-stage[data-status="active"] .p8-stage-body {
+.p8-stage-body:empty { padding: 0; }
+.p8-stage[data-status="active"] .p8-stage-body,
+.p8-stage[data-status="done"]   .p8-stage-body,
+.p8-stage[data-status="hitl"]   .p8-stage-body,
+.p8-stage[data-status="fail"]   .p8-stage-body {
   opacity: 1;
   transform: translateY(0);
 }
-.p8-stage-body::-webkit-scrollbar { width: 4px; }
-.p8-stage-body::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
+/* Collapse the summary/time/glyph duplication: once body is visible the
+   one-line collapsed summary would be redundant with the body itself. */
+.p8-stage[data-status="done"] .p8-stage-summary,
+.p8-stage[data-status="hitl"] .p8-stage-summary { display: none; }
 
 /* Final dispatched-message card, appended inside explainer body */
 .p8-final-card {
