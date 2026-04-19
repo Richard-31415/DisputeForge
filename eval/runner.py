@@ -33,17 +33,37 @@ REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 FIXTURES = REPO_ROOT / "eval" / "test_cases" / "disputes.jsonl"
 RUNS_DIR = REPO_ROOT / "eval" / "runs"
 
-# Very rough per-call cost estimates (USD). Update when Anthropic publishes
-# 4.6/4.7 pricing in the console — for now this is an order-of-magnitude proxy
-# so the "avg $/case" column is meaningful, not precise.
-COST_PER_CALL_BY_ROLE = {
-    "communicator": 0.002,   # haiku-4-5
-    "planner": 0.030,        # sonnet-4-6
-    "evaluator": 0.010,      # mostly programmatic, token cost when judge tier runs
-    "explainer": 0.020,      # sonnet-4-6
-    "hitl": 0.000,           # deterministic
+# Per-call cost estimates (USD) by provider.
+# Based on typical token counts per role × published pricing.
+# Evaluator is deterministic (no LLM call) → $0.
+#
+# Anthropic: Haiku 4.5 = $0.80/M in + $4/M out, Sonnet 4.6 = $3/M in + $15/M out
+#   communicator: ~400 in + 100 out  → (400×0.8 + 100×4)/1M   = $0.00072 ≈ 0.001
+#   planner:      ~800 in + 500 out  → (800×3   + 500×15)/1M  = $0.0099  ≈ 0.010
+#   explainer:    ~500 in + 250 out  → (500×3   + 250×15)/1M  = $0.0053  ≈ 0.005
+_COST_ANTHROPIC = {
+    "communicator": 0.001,   # haiku-4-5
+    "planner": 0.010,        # sonnet-4-6
+    "evaluator": 0.000,      # deterministic — no LLM call
+    "explainer": 0.005,      # sonnet-4-6
+    "executor": 0.000,       # deterministic tool dispatch
+    "hitl": 0.000,
     "harness.snapshot": 0.000,
 }
+# OpenAI: gpt-5.4-mini = $0.75/M in + $4.5/M out, gpt-5.4 = $2.5/M in + $15/M out
+#   communicator: ~400 in + 100 out  → (400×0.75 + 100×4.5)/1M = $0.00075 ≈ 0.001
+#   planner:      ~800 in + 500 out  → (800×2.5  + 500×15)/1M  = $0.0095  ≈ 0.010
+#   explainer:    ~500 in + 250 out  → (500×2.5  + 250×15)/1M  = $0.0050  ≈ 0.005
+_COST_OPENAI = {
+    "communicator": 0.001,   # gpt-5.4-mini
+    "planner": 0.010,        # gpt-5.4
+    "evaluator": 0.000,      # deterministic — no LLM call
+    "explainer": 0.005,      # gpt-5.4
+    "executor": 0.000,
+    "hitl": 0.000,
+    "harness.snapshot": 0.000,
+}
+COST_PER_CALL_BY_ROLE = _COST_ANTHROPIC  # overridden at runtime by --provider
 
 
 @dataclass
@@ -207,7 +227,7 @@ def summarize(results: list[CaseResult], cases: list[dict[str, Any]]) -> dict[st
         p95 = max(latencies, default=0.0)
 
     auto_resolve_pct = sum(1 for r in results if r.action_taken == "auto_refund") / total if total else 0.0
-    hitl_pct = sum(1 for r in results if r.requires_hitl) / total if total else 0.0
+    hitl_pct = sum(1 for r in results if r.action_taken == "human_review") / total if total else 0.0
     avg_cost = sum(r.est_cost_usd for r in results) / total if total else 0.0
 
     # Escalation-when-required recall: of cases that should escalate, how many did?
@@ -347,9 +367,11 @@ async def _amain(args: argparse.Namespace) -> int:
         print("No cases to run.", file=sys.stderr)
         return 2
 
-    from harness.evaluation.dispute_verifier import DisputeVerifier
+    from harness.evaluation.dispute_verifier import DisputeVerifier, JUDGE_MODEL
 
-    verifier = DisputeVerifier(use_judge=not args.no_judge)
+    _default_judge = "gpt-5.4" if args.provider == "openai" else JUDGE_MODEL
+    judge_model = args.judge_model or _default_judge
+    verifier = DisputeVerifier(use_judge=not args.no_judge, judge_model=judge_model)
 
     graph = None
     if not args.dry_run:
@@ -364,15 +386,31 @@ async def _amain(args: argparse.Namespace) -> int:
             )
             return 3
 
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    ts = time.strftime("%Y%m%d-%H%M%S")
+    log_path = RUNS_DIR / f"{ts}.jsonl"
+
     results: list[CaseResult] = []
-    for i, case in enumerate(cases, 1):
-        print(f"  [{i}/{len(cases)}] {case.get('case_id')}... ", end="", flush=True)
-        r = await run_one(case, dry_run=args.dry_run, verifier=verifier, graph=graph)
-        print("PASS" if r.passed else f"FAIL ({r.tier})")
-        results.append(r)
+    try:
+        with log_path.open("w") as log_f:
+            for i, case in enumerate(cases, 1):
+                print(f"  [{i}/{len(cases)}] {case.get('case_id')}... ", end="", flush=True)
+                r = await run_one(case, dry_run=args.dry_run, verifier=verifier, graph=graph)
+                print("PASS" if r.passed else f"FAIL ({r.tier})")
+                results.append(r)
+                log_f.write(json.dumps(asdict(r)) + "\n")
+                log_f.flush()
+    except KeyboardInterrupt:
+        print(f"\n[interrupted — {len(results)}/{len(cases)} cases saved to {log_path.relative_to(REPO_ROOT)}]")
+        if results:
+            summary = summarize(results, cases)
+            with log_path.open("a") as log_f:
+                log_f.write(json.dumps({"_summary": True, "_partial": True, **summary}) + "\n")
+        return 2
 
     summary = summarize(results, cases)
-    log_path = _write_run_log(results, summary)
+    with log_path.open("a") as log_f:
+        log_f.write(json.dumps({"_summary": True, **summary}) + "\n")
 
     if args.plain:
         _print_plain(results, summary)
@@ -392,17 +430,41 @@ def main() -> int:
     p.add_argument("--no-judge", action="store_true", help="Skip the LLM-judge tier.")
     p.add_argument("--dry-run", action="store_true", help="Stub the agent; no API calls.")
     p.add_argument("--plain", action="store_true", help="Disable rich output.")
+    p.add_argument(
+        "--provider",
+        choices=["anthropic", "openai"],
+        default="anthropic",
+        help="Model provider: anthropic (default, Claude) or openai (gpt-5.4).",
+    )
+    p.add_argument(
+        "--judge-model",
+        default=None,
+        help="Override the judge model. Defaults to claude-sonnet-4-6 (anthropic) or gpt-5.4 (openai).",
+    )
+    p.add_argument(
+        "--ensemble",
+        action="store_true",
+        help="Run planner 3× in parallel (escalate-on-any). Sets DISPUTEFORGE_ENSEMBLE=true.",
+    )
     args = p.parse_args()
 
     # Ensure repo root is on sys.path so `src.agent` imports when invoked as a module.
     sys.path.insert(0, str(REPO_ROOT))
-    # Respect .env for ANTHROPIC_API_KEY without requiring python-dotenv to be loaded.
+
+    # Load API keys from .env for whichever provider is active.
     env = REPO_ROOT / ".env"
-    if env.exists() and "ANTHROPIC_API_KEY" not in os.environ:
+    _key_prefixes = ["ANTHROPIC_API_KEY=", "OPENAI_API_KEY=", "LLAMA_CLOUD_API_KEY=", "AGENT_MODEL_PROVIDER="]
+    if env.exists():
         for ln in env.read_text().splitlines():
-            if ln.startswith("ANTHROPIC_API_KEY="):
-                os.environ["ANTHROPIC_API_KEY"] = ln.split("=", 1)[1].strip().strip('"').strip("'")
-                break
+            for prefix in _key_prefixes:
+                if ln.startswith(prefix) and prefix.rstrip("=") not in os.environ:
+                    os.environ[prefix.rstrip("=")] = ln.split("=", 1)[1].strip().strip('"').strip("'")
+
+    os.environ["AGENT_MODEL_PROVIDER"] = args.provider
+    if args.ensemble:
+        os.environ["DISPUTEFORGE_ENSEMBLE"] = "true"
+    global COST_PER_CALL_BY_ROLE
+    COST_PER_CALL_BY_ROLE = _COST_OPENAI if args.provider == "openai" else _COST_ANTHROPIC
 
     return asyncio.run(_amain(args))
 

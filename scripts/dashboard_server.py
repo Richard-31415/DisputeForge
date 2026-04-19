@@ -38,13 +38,27 @@ DASHBOARD_DIR = REPO_ROOT / "dashboard"
 sys.path.insert(0, str(REPO_ROOT))
 
 
+_KEYS_TO_LOAD = (
+    "ANTHROPIC_API_KEY",
+    "OPENAI_API_KEY",
+    "LLAMA_CLOUD_API_KEY",
+    "AGENT_MODEL_PROVIDER",
+)
+
+
 def _load_env() -> None:
     env = REPO_ROOT / ".env"
-    if env.exists() and "ANTHROPIC_API_KEY" not in os.environ:
-        for ln in env.read_text().splitlines():
-            if ln.startswith("ANTHROPIC_API_KEY="):
-                os.environ["ANTHROPIC_API_KEY"] = ln.split("=", 1)[1].strip().strip('"').strip("'")
-                break
+    if not env.exists():
+        return
+    for ln in env.read_text().splitlines():
+        ln = ln.strip()
+        if not ln or ln.startswith("#"):
+            continue
+        for key in _KEYS_TO_LOAD:
+            if ln.startswith(key + "=") and key not in os.environ:
+                val = ln.split("=", 1)[1].split("#")[0].strip().strip('"').strip("'")
+                if val:
+                    os.environ[key] = val
 
 
 _load_env()
@@ -57,6 +71,26 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+async def _prewarm() -> None:
+    """Build the LlamaIndex RAG retriever at startup so the first dispute request is fast."""
+    import asyncio
+    import logging
+    log = logging.getLogger("dashboard.prewarm")
+    try:
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, _build_rag_index)
+        log.info("RAG index pre-warmed.")
+    except Exception as e:
+        log.warning("RAG pre-warm failed (non-fatal): %s", e)
+
+
+def _build_rag_index() -> None:
+    import src.tools.policy_rag  # noqa: F401
+    from harness.tools.base import call
+    call("retrieve_policy", query="Reg E error resolution unauthorized charge")  # triggers build
 
 
 class DisputeInput(BaseModel):
@@ -116,7 +150,7 @@ async def _run_graph_streaming(payload: DisputeInput) -> AsyncIterator[dict[str,
     t0 = time.perf_counter()
     try:
         graph = build_graph()
-        cfg = {"configurable": {"thread_id": case_id}}
+        cfg = {"configurable": {"thread_id": case_id}, "recursion_limit": 100}
 
         last_state: dict[str, Any] = dict(init)
 
@@ -189,7 +223,7 @@ async def _run_rollback_streaming() -> AsyncIterator[dict[str, Any]]:
                         "ts": int(time.time() * 1000)})
 
             graph = build_graph()
-            cfg = {"configurable": {"thread_id": base["case_id"] + "_" + run_label}}
+            cfg = {"configurable": {"thread_id": base["case_id"] + "_" + run_label}, "recursion_limit": 100}
             last_state: dict[str, Any] = dict(init)
 
             async for event in graph.astream(init, config=cfg, stream_mode="updates"):

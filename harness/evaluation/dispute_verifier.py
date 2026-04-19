@@ -68,8 +68,32 @@ class DisputeVerifier(VerifierBase):
     `use_judge=False` (useful for quick smoke runs without Anthropic credits)."""
 
     def __init__(self, *, use_judge: bool = True, judge_model: str = JUDGE_MODEL):
-        self._use_judge = use_judge and bool(os.environ.get("ANTHROPIC_API_KEY"))
         self._judge_model = judge_model
+        self._is_openai = judge_model.startswith("gpt-") or judge_model.startswith("o")
+        key_var = "OPENAI_API_KEY" if self._is_openai else "ANTHROPIC_API_KEY"
+        self._use_judge = use_judge and bool(os.environ.get(key_var))
+
+    def _call_judge(self, system: str, user: str) -> str:
+        if self._is_openai:
+            from openai import OpenAI
+            resp = OpenAI().chat.completions.create(
+                model=self._judge_model,
+                max_completion_tokens=512,
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+            )
+            return resp.choices[0].message.content.strip()
+        else:
+            from anthropic import Anthropic
+            resp = Anthropic().messages.create(
+                model=self._judge_model,
+                max_tokens=512,
+                system=system,
+                messages=[{"role": "user", "content": user}],
+            )
+            return resp.content[0].text.strip()
 
     # Tier 1 — JSON shape on final_response.
     def check_schema(self, output: Any) -> Verdict:
@@ -146,7 +170,7 @@ class DisputeVerifier(VerifierBase):
             return Verdict(False, "exec", "; ".join(reasons), score=score)
         return Verdict(True, "exec", "all Reg E + policy checks passed", score=1.0)
 
-    # Tier 3 — reasoning-quality LLM judge (claude-sonnet-4-6).
+    # Tier 3 — reasoning-quality LLM judge.
     async def check_judge(self, output: Any) -> Verdict | None:
         if not self._use_judge:
             return None
@@ -155,18 +179,20 @@ class DisputeVerifier(VerifierBase):
         case = _case(output)
         fr = _final_response(output)
 
-        try:
-            from anthropic import Anthropic
-        except ImportError:
-            return Verdict(True, "judge", "anthropic SDK missing — skipping", score=None)
-
+        action_taken = state.get("action_taken") or ""
+        d_instruction = (
+            "D. Reg E compliance language — ONLY applies to auto_refund. "
+            "If action is auto_refund: are 'provisional credit', 'investigation', "
+            "and 'business days' present and used correctly? "
+            "If action is human_review or deny: score D as 5 (not applicable — "
+            "those phrases are correctly absent for non-refund outcomes)."
+        )
         rubric = (
             "Score the dispute agent's response on 4 axes (0–5 each):\n"
             "  A. Action correctness — did it pick the right action (auto_refund/human_review/deny)?\n"
             "  B. Reasoning quality — does the reasoning reference the specific facts of the case?\n"
             "  C. Customer tone — plain-English, empathetic, non-legalistic?\n"
-            "  D. Reg E compliance language — when auto_refund, are 'provisional credit', "
-            "'investigation', and 'business days' present and used correctly?\n"
+            f"  {d_instruction}\n"
             "Return JSON only: {\"A\":0-5,\"B\":0-5,\"C\":0-5,\"D\":0-5,\"notes\":\"...\"}. "
             "Pass threshold: mean >= 3.5 AND A >= 4."
         )
@@ -189,14 +215,7 @@ class DisputeVerifier(VerifierBase):
         }
 
         try:
-            client = Anthropic()
-            resp = client.messages.create(
-                model=self._judge_model,
-                max_tokens=512,
-                system=rubric,
-                messages=[{"role": "user", "content": json.dumps(payload)}],
-            )
-            raw = resp.content[0].text.strip()
+            raw = self._call_judge(rubric, json.dumps(payload))
             if raw.startswith("```"):
                 raw = raw.split("```", 2)[1].lstrip("json").strip()
             scores = json.loads(raw)

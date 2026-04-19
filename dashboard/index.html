@@ -46,6 +46,7 @@
     <button class="tab tab-primary"  data-mode="rollback">Rollback</button>
     <span class="tabs-sep"></span>
     <button class="tab tab-secondary" data-mode="architecture">Architecture</button>
+    <button class="tab tab-secondary" data-mode="flow">Flow</button>
     <button class="tab tab-secondary" data-mode="trace">Trace</button>
     <button class="tab tab-secondary" data-mode="harness">Harness</button>
   </nav>
@@ -242,6 +243,188 @@
         </div>
       </div>
     </div>
+  </section>
+
+  <!-- ====== FLOW ====== -->
+  <section class="mode mode-flow" data-mode="flow">
+    <div class="flow-container">
+      <header class="flow-head">
+        <div class="eyebrow">pipeline · step by step</div>
+        <h1 class="flow-title">How a dispute travels through the agent.</h1>
+        <p class="flow-sub">Every node, every routing decision, every tool call and RAG retrieval.</p>
+      </header>
+
+      <div class="flow-pipeline">
+
+        <!-- INPUT -->
+        <div class="flow-terminal flow-terminal-start">
+          <span class="flow-term-icon">▸</span>
+          user dispute message + transaction context
+        </div>
+        <div class="flow-conn"></div>
+
+        <!-- COMMUNICATOR -->
+        <div class="flow-stage">
+          <div class="flow-node" style="--role-c:#00d9ff">
+            <div class="flow-node-head">
+              <span class="flow-node-name">Communicator</span>
+              <span class="flow-node-model">claude-haiku-4-5</span>
+            </div>
+            <div class="flow-node-steps">
+              <div class="flow-step">Parse intent → dispute_type, claim, confidence</div>
+              <div class="flow-step flow-step-guard">
+                <span class="flow-step-icon">⚑</span>
+                Scan for 5 adversarial markers (case-insensitive)
+                <div class="flow-tags">
+                  <span class="flow-tag">"ignore previous"</span>
+                  <span class="flow-tag">"disregard prior"</span>
+                  <span class="flow-tag">"system prompt"</span>
+                  <span class="flow-tag">"you are now"</span>
+                  <span class="flow-tag">"jailbreak"</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="flow-callout flow-callout-hitl">
+            <div class="flow-co-label">if adversarial</div>
+            <div class="flow-co-arrow">→</div>
+            <div class="flow-co-dest" style="--dest-c:#ff6b6b">HITL</div>
+            <div class="flow-co-note">short-circuits before planning</div>
+          </div>
+        </div>
+        <div class="flow-conn flow-conn-labeled"><span class="flow-conn-label">clean intent</span></div>
+
+        <!-- PLANNER -->
+        <div class="flow-stage">
+          <div class="flow-node" style="--role-c:#7aed92">
+            <div class="flow-node-head">
+              <span class="flow-node-name">Planner</span>
+              <span class="flow-node-model">claude-sonnet-4-6</span>
+            </div>
+            <div class="flow-node-steps">
+              <div class="flow-step flow-step-rag">
+                <span class="flow-step-icon">◎</span>
+                retrieve_policy → Reg E statute + CFPB exam procedures
+              </div>
+              <div class="flow-step">LLM: proposed_action (auto_refund / human_review / deny)</div>
+              <div class="flow-step">2–5 plan steps with tool names + rationale</div>
+              <div class="flow-step flow-step-dim">On replan: evaluator feedback injected into prompt</div>
+            </div>
+          </div>
+          <div class="flow-callout flow-callout-rag">
+            <div class="flow-rag-head">RAG · LlamaIndex</div>
+            <div class="flow-rag-doc"><span class="flow-rag-dot">◈</span> 12 CFR Part 1005 (Reg E statute)</div>
+            <div class="flow-rag-doc"><span class="flow-rag-dot">◈</span> CFPB EFTA exam procedures (PDF)</div>
+            <div class="flow-rag-meta">OpenAI embeddings · similarity top-k=4</div>
+          </div>
+        </div>
+        <div class="flow-conn"></div>
+
+        <!-- EXECUTOR -->
+        <div class="flow-stage">
+          <div class="flow-node" style="--role-c:#94a3b8">
+            <div class="flow-node-head">
+              <span class="flow-node-name">Executor</span>
+              <span class="flow-node-model">deterministic · no LLM · $0.00</span>
+            </div>
+            <div class="flow-node-steps">
+              <div class="flow-step">Dispatch each plan step against registered tool registry</div>
+              <div class="flow-step">Soft-capture failures — bad tool ≠ abort graph</div>
+              <div class="flow-step">Results → state.tool_results + trace entry</div>
+            </div>
+          </div>
+          <div class="flow-callout flow-callout-tools">
+            <div class="flow-tools-head">Tool registry</div>
+            <div class="flow-tool">fetch_transaction</div>
+            <div class="flow-tool">check_merchant_history</div>
+            <div class="flow-tool">issue_provisional_credit</div>
+            <div class="flow-tool">open_investigation</div>
+            <div class="flow-tool">notify_customer</div>
+            <div class="flow-tool">escalate_to_human</div>
+          </div>
+        </div>
+        <div class="flow-conn"></div>
+
+        <!-- EVALUATOR -->
+        <div class="flow-stage">
+          <div class="flow-node" style="--role-c:#ffd93d">
+            <div class="flow-node-head">
+              <span class="flow-node-name">Evaluator</span>
+              <span class="flow-node-model">deterministic · no LLM · $0.00</span>
+            </div>
+            <div class="flow-node-steps">
+              <div class="flow-step flow-step-check">Plan non-empty?</div>
+              <div class="flow-step flow-step-check">proposed_action in valid set?</div>
+              <div class="flow-step flow-step-check">auto_refund ∧ amount &gt; $50 → block</div>
+              <div class="flow-step flow-step-check">notify_customer step present?</div>
+            </div>
+          </div>
+          <div class="flow-callout flow-callout-eval">
+            <div class="flow-eval-route">
+              <div class="flow-co-label">fail · replan_count &lt; 2</div>
+              <div class="flow-co-arrow flow-co-arrow-up">↑</div>
+              <div class="flow-co-dest" style="--dest-c:#7aed92">back to Planner</div>
+              <div class="flow-co-note">evaluator feedback injected into next prompt</div>
+            </div>
+            <div class="flow-eval-route" style="margin-top:10px">
+              <div class="flow-co-label">fail · 2 replans exhausted</div>
+              <div class="flow-co-arrow">→</div>
+              <div class="flow-co-dest" style="--dest-c:#ff6b6b">HITL</div>
+              <div class="flow-co-note mono" style="font-size:10px">hitl_reason=evaluator_replan_exhausted</div>
+            </div>
+          </div>
+        </div>
+        <div class="flow-conn flow-conn-labeled"><span class="flow-conn-label">pass</span></div>
+
+        <!-- SNAPSHOT -->
+        <div class="flow-snapshot">
+          <span class="flow-snap-icon">◈</span>
+          <div class="flow-snap-body">
+            <span class="flow-snap-title">harness.snapshot</span>
+            <span class="flow-snap-desc">checkpoint taken before the write — snapshot_id logged to every trace entry</span>
+          </div>
+        </div>
+        <div class="flow-conn"></div>
+
+        <!-- EXPLAINER -->
+        <div class="flow-stage">
+          <div class="flow-node" style="--role-c:#c084fc">
+            <div class="flow-node-head">
+              <span class="flow-node-name">Explainer</span>
+              <span class="flow-node-model">claude-sonnet-4-6</span>
+            </div>
+            <div class="flow-node-steps">
+              <div class="flow-step">LLM: render customer-facing response</div>
+              <div class="flow-step flow-step-dim">For auto_refund: Reg E language required in system prompt</div>
+              <div class="flow-step flow-step-guard">
+                <span class="flow-step-icon">⚑</span>
+                Reg E post-check: scan output for 3 required phrases
+                <div class="flow-tags">
+                  <span class="flow-tag flow-tag-phrase">"provisional credit"</span>
+                  <span class="flow-tag flow-tag-phrase">"investigation"</span>
+                  <span class="flow-tag flow-tag-phrase">"business days"</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="flow-callout flow-callout-rollback">
+            <div class="flow-co-label">missing phrase</div>
+            <div class="flow-co-arrow">→</div>
+            <div class="flow-co-dest" style="--dest-c:#ff6b6b">HITL · rollback</div>
+            <div class="flow-co-note mono" style="font-size:10px">hitl_reason=reg_e_missing_phrases:[…]</div>
+            <div class="flow-co-note">non-compliant message never reaches customer</div>
+          </div>
+        </div>
+        <div class="flow-conn flow-conn-labeled"><span class="flow-conn-label">compliant</span></div>
+
+        <!-- OUTPUT -->
+        <div class="flow-terminal flow-terminal-end">
+          <span class="flow-term-icon">✓</span>
+          customer response · action_taken logged · case closed
+        </div>
+
+      </div><!-- /flow-pipeline -->
+    </div><!-- /flow-container -->
   </section>
 
   <!-- ====== TRACE ====== -->

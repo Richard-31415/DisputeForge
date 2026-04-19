@@ -32,6 +32,7 @@ const SCENE_OFFSET_BY_MODE = {
   eval:         4.0,
   rollback:     4.0,
   architecture: 3.6,
+  flow:         3.6,
   trace:        3.6,
   harness:      0.0,
 };
@@ -55,6 +56,7 @@ const CAMERA_TARGETS = {
   eval:         { rel: [6.3, 4.4, 6.5], lookY: 0.2, autoRotate: true,  rotSpeed: 0.18 },
   rollback:     { rel: [4.0, 2.8, 6.5], lookY: 0.2, autoRotate: false },
   architecture: { rel: [4.3, 3.6, 7.8], lookY: 0.0, autoRotate: true,  rotSpeed: 0.5 },
+  flow:         { rel: [4.3, 3.6, 7.8], lookY: 0.0, autoRotate: true,  rotSpeed: 0.4 },
   trace:        { rel: [4.6, 3.6, 7.0], lookY: 0.1, autoRotate: false },
   harness:      { rel: [0.0, 4.0, 11.5], lookY: 0.2, autoRotate: true, rotSpeed: 0.3 },
 };

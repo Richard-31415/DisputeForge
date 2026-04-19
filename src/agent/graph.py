@@ -2,7 +2,7 @@
 
 Flow mirrors Capital One's Chat Concierge:
     START -> communicator -> (planner | hitl)
-             planner -> evaluator
+             planner -> executor -> evaluator
              evaluator -> (explainer | planner[replan] | hitl)
              explainer -> END
              hitl -> END
@@ -21,6 +21,7 @@ from typing import Any
 from src.agent.nodes import (
     node_communicator,
     node_evaluator,
+    node_executor,
     node_explainer,
     node_hitl,
     node_planner,
@@ -63,6 +64,7 @@ def build_graph(checkpointer: Any = None):
     builder = StateGraph(DisputeState)
     builder.add_node("communicator", node_communicator)
     builder.add_node("planner", node_planner)
+    builder.add_node("executor", node_executor)
     builder.add_node("evaluator", node_evaluator)
     builder.add_node("explainer", _explainer_with_snapshot)
     builder.add_node("hitl", node_hitl)
@@ -73,7 +75,8 @@ def build_graph(checkpointer: Any = None):
         route_after_communicator,
         {"planner": "planner", "hitl": "hitl"},
     )
-    builder.add_edge("planner", "evaluator")
+    builder.add_edge("planner", "executor")
+    builder.add_edge("executor", "evaluator")
     builder.add_conditional_edges(
         "evaluator",
         route_after_evaluator,

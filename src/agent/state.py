@@ -30,6 +30,9 @@ class DisputeState(TypedDict, total=False):
     replan_count: int
     snapshot_id: str | None
 
+    tool_results: list[dict[str, Any]]
+    policy_context: str
+
     trace: Annotated[list[dict[str, Any]], operator.add]
     err_kind: str | None
     latency_ms: float
@@ -62,6 +65,8 @@ def initial_state(
         hitl_reason="",
         replan_count=0,
         snapshot_id=None,
+        tool_results=[],
+        policy_context="",
         trace=[],
         err_kind=None,
         latency_ms=0.0,
