@@ -3305,7 +3305,7 @@
     window.addEventListener('hashchange', hashZone);
 
     // Dynamic editorial background — paper fiber + grid + registration
-    // marks that occasionally pulse + drifting marginalia fragments.
+    // marks that occasionally pulse.
     try { startBackgroundAtmosphere(); }
     catch (e) { console.error('background atmosphere failed:', e); }
 
@@ -3315,28 +3315,8 @@
 
   // =================================================================
   // Editorial background — paper fiber breathing + plane registration
-  // marks + drifting marginalia ghosts. Low CPU; slow cycles.
+  // marks. Low CPU; slow cycles.
   // =================================================================
-
-  // Marginalia copy — small editorial fragments that appear one at a time
-  // in a random margin location every ~12s. Some are pure typography,
-  // some are tiny data captions that fit the agent-evaluation theme.
-  const MARGINALIA = [
-    { g: '§',  t: '3.2 · see appendix b' },
-    { g: 'fig.', t: '14 — dispute resolution topology' },
-    { g: '¶',  t: 'regulation e · 12 cfr § 1005.11' },
-    { g: '❦',  t: 'stripe press, 2024' },
-    { g: '*',  t: 'n = 18 · 95% ci' },
-    { g: '§',  t: '4.1 · explainer post-check' },
-    { g: 'fig.', t: '07 — agent = model + harness' },
-    { g: '◊',  t: 'exhibit b · tampered draft' },
-    { g: '⟶',  t: 'writer ≠ grader · always' },
-    { g: '¶',  t: 'harness before model' },
-    { g: '§',  t: '2.4 · gate threshold: 0.90' },
-    { g: '◊',  t: 'replan loop · max = 2' },
-    { caliper: true, t: '‹—— 2.4σ ——›' },
-    { caliper: true, t: '‹—— 45 bus. days ——›' },
-  ];
 
   function startBackgroundAtmosphere() {
     // ---- A. Paper fiber breathing ---------------------------------
@@ -3357,9 +3337,6 @@
     // ---- B. Plane decoration: hairline grid + registration marks ----
     renderPlaneDeco();
     schedulePulse();
-
-    // ---- C. Marginalia ghost scheduler -----------------------------
-    scheduleMarginalia();
   }
 
   // The 5000 × 1700 plane. Build a sparse hairline grid in the areas
@@ -3453,44 +3430,6 @@
       setTimeout(tick, 3200 + Math.random() * 2400);
     };
     setTimeout(tick, 4000);
-  }
-
-  // Marginalia ghost — pick a random fragment + random safe margin
-  // position every ~12s, fade it in for 6s, fade it out.
-  function scheduleMarginalia() {
-    const el = document.getElementById('marginalia');
-    if (!el) return;
-
-    function pick() {
-      const frag = MARGINALIA[Math.floor(Math.random() * MARGINALIA.length)];
-      el.innerHTML = frag.caliper
-        ? `<span class="mg-caliper">${frag.t}</span>`
-        : `<span class="mg-glyph">${frag.g}</span>${frag.t}`;
-
-      // Place it in a random margin region (top, right, bottom, left edges).
-      // Avoid center so it doesn't overlap HUD or zones.
-      const regions = [
-        { top: '3vh',   left: '14vw',  right: 'auto', bottom: 'auto' },
-        { top: '3vh',   left: 'auto',  right: '6vw',  bottom: 'auto' },
-        { top: 'auto',  left: '14vw',  right: 'auto', bottom: '5vh'  },
-        { top: 'auto',  left: 'auto',  right: '6vw',  bottom: '5vh'  },
-        { top: '50vh',  left: '3vw',   right: 'auto', bottom: 'auto' },
-        { top: '50vh',  left: 'auto',  right: '3vw',  bottom: 'auto' },
-      ];
-      const r = regions[Math.floor(Math.random() * regions.length)];
-      el.style.top    = r.top;
-      el.style.left   = r.left;
-      el.style.right  = r.right;
-      el.style.bottom = r.bottom;
-      el.classList.add('on');
-      setTimeout(() => el.classList.remove('on'), 6800);
-    }
-
-    // First one after 4s so it doesn't appear during page settle
-    setTimeout(function loop() {
-      pick();
-      setTimeout(loop, 11000 + Math.random() * 4000);
-    }, 4000);
   }
 
   if (document.readyState === 'loading') {

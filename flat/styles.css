@@ -303,7 +303,7 @@ kbd {
 }
 
 /* =================================================================
-   Background: paper fiber + marginalia ghosts + plane decoration
+   Background: paper fiber + plane decoration
    (hairline grid + registration marks)
    ================================================================= */
 
@@ -408,41 +408,6 @@ kbd {
 }
 .cm-serial-bl { bottom: 12px; left: 40px;  }
 .cm-serial-tr { top: 12px;    right: 40px; }
-
-/* C. Marginalia ghost — a single absolute-positioned editorial fragment
-   that fades in at a random margin location every ~12s. */
-.marginalia {
-  position: fixed;
-  padding: 0;
-  pointer-events: none;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: rgba(138, 90, 43, 0.42);  /* faded umber */
-  letter-spacing: 0.06em;
-  line-height: 1.5;
-  white-space: nowrap;
-  opacity: 0;
-  transition: opacity 1200ms var(--ease-std), transform 1200ms var(--ease-std);
-  transform: translateY(2px);
-  z-index: 2;
-  max-width: 280px;
-  font-style: italic;
-}
-.marginalia.on { opacity: 1; transform: translateY(0); }
-.marginalia .mg-glyph {
-  font-family: var(--font-display);
-  font-style: italic;
-  color: rgba(138, 90, 43, 0.55);
-  margin-right: 6px;
-  font-size: 13px;
-  letter-spacing: 0;
-}
-.marginalia .mg-caliper {
-  font-family: var(--font-mono);
-  color: rgba(15, 15, 14, 0.32);
-  letter-spacing: 0.1em;
-  font-style: normal;
-}
 
 /* =================================================================
    Zones
