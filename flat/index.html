@@ -22,10 +22,9 @@
     </div>
   </div>
   <div class="hud-hints">
-    <div class="hint"><kbd>←</kbd><kbd>→</kbd> adjacent zones</div>
     <div class="hint"><kbd>1</kbd>–<kbd>7</kbd> jump to zone</div>
+    <div class="hint"><kbd>←</kbd><kbd>→</kbd> adjacent zones</div>
     <div class="hint"><kbd>esc</kbd> zoom out</div>
-    <div class="hint"><kbd>drag</kbd> pan freely</div>
   </div>
 </aside>
 
@@ -50,9 +49,37 @@
   <div class="zone-chrome-counter mono" id="chrome-counter">01 / 07</div>
 </div>
 
+<!-- Viewport-fixed paper-fiber overlay — breathes via baseFrequency tween -->
+<svg class="fiber-layer" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="fiber-filter" x="0" y="0" width="100%" height="100%">
+      <feTurbulence id="fiber-turb" type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="4"/>
+      <feColorMatrix values="0 0 0 0 0.06   0 0 0 0 0.06   0 0 0 0 0.05   0 0 0 0.045 0"/>
+    </filter>
+  </defs>
+  <rect width="100%" height="100%" filter="url(#fiber-filter)"/>
+</svg>
+
+<!-- Marginalia ghost — fades one editorial fragment in/out in a random gutter -->
+<div class="marginalia" id="marginalia" aria-hidden="true"></div>
+
+<!-- Viewport-fixed crop marks (always visible, irrespective of plane zoom) -->
+<div class="crop-marks" aria-hidden="true">
+  <svg class="cm cm-tl" viewBox="0 0 24 24"><path d="M 1 12 L 1 1 L 12 1" class="cm-stroke"/></svg>
+  <svg class="cm cm-tr" viewBox="0 0 24 24"><path d="M 12 1 L 23 1 L 23 12" class="cm-stroke"/></svg>
+  <svg class="cm cm-bl" viewBox="0 0 24 24"><path d="M 1 12 L 1 23 L 12 23" class="cm-stroke"/></svg>
+  <svg class="cm cm-br" viewBox="0 0 24 24"><path d="M 12 23 L 23 23 L 23 12" class="cm-stroke"/></svg>
+  <div class="cm-serial cm-serial-bl">plate · df / 07</div>
+  <div class="cm-serial cm-serial-tr">rev 0.2</div>
+</div>
+
 <!-- the main pannable plane -->
 <main class="plane" id="plane">
   <div class="plane-content" id="plane-content">
+    <!-- Plane-attached decoration: hairline grid + registration marks + sweep.
+         Rendered programmatically in renderPlaneDeco() so we only compute once. -->
+    <svg class="plane-deco" id="plane-deco"
+         viewBox="0 0 5000 1700" preserveAspectRatio="none" aria-hidden="true"></svg>
 
     <!-- ============ ZONE 01 · OVERVIEW ============ -->
     <section class="zone" data-zone-idx="0" data-zone-id="overview" data-x="0" data-y="0" data-w="1100" data-h="760">
@@ -112,22 +139,49 @@
 
       <div class="zone-detail zone-agents" data-hover="">
         <header class="z-head">
-          <div class="eyebrow">02 · ensemble</div>
-          <h2 class="z-title">Five roles, in conversation.</h2>
+          <div class="eyebrow">02 · the four roles</div>
+          <h2 class="z-title">Watch a dispute travel through the graph.</h2>
           <p class="z-sub">
-            The chord above shows how messages flow between roles. The ridgeline below shows per-role
-            time spent across the 18 eval runs. Hover a ribbon or a ridge — the non-matching fades out.
+            Pick a scenario. A labeled message follows the same path your dispute would — from
+            intake at the Communicator, through the Planner and Evaluator, to the Explainer — or,
+            if the guardrail catches it, straight to the human queue.
           </p>
         </header>
 
-        <div class="ensemble">
-          <figure class="ens-chord">
-            <svg id="chord-svg" viewBox="-220 -220 440 440" aria-label="Agent chord diagram"></svg>
-          </figure>
-          <figure class="ens-ridges">
-            <svg id="ridges-svg" viewBox="0 0 640 220" aria-label="Per-role timing ridgeline"></svg>
-            <div class="ridges-axis mono">latency →</div>
-          </figure>
+        <div class="scenario-picker" id="scenario-picker">
+          <button class="scenario" data-scenario="fraud_small">
+            <span class="s-num mono">A</span>
+            <div class="s-body">
+              <div class="s-title">Small fraud</div>
+              <div class="s-desc">$29 · auto_refund path</div>
+            </div>
+          </button>
+          <button class="scenario" data-scenario="fraud_big">
+            <span class="s-num mono">B</span>
+            <div class="s-body">
+              <div class="s-title">Big fraud</div>
+              <div class="s-desc">$842 · escalates to human</div>
+            </div>
+          </button>
+          <button class="scenario" data-scenario="remorse">
+            <span class="s-num mono">C</span>
+            <div class="s-body">
+              <div class="s-title">Buyer's remorse</div>
+              <div class="s-desc">$89 · non-Reg-E · deny</div>
+            </div>
+          </button>
+          <button class="scenario" data-scenario="adversarial">
+            <span class="s-num mono">D</span>
+            <div class="s-body">
+              <div class="s-title">Prompt injection</div>
+              <div class="s-desc">guardrail catches at Communicator</div>
+            </div>
+          </button>
+        </div>
+
+        <div class="flow-stage">
+          <svg id="flow-svg" viewBox="0 -40 960 500" aria-label="Agent flow diagram"></svg>
+          <div class="flow-hint mono" id="flow-hint">pick a scenario above to trace a case</div>
         </div>
       </div>
     </section>
@@ -241,6 +295,21 @@
             </div>
           </div>
         </div>
+
+        <!-- TERMINAL: streaming SSE trace as structured JSON -->
+        <div class="terminal" id="terminal">
+          <div class="terminal-head">
+            <span class="terminal-title mono">trace <span class="dim">→</span> <span id="term-run-id">—</span></span>
+            <span class="terminal-status mono" id="term-status">
+              <span class="term-led" id="term-led"></span>
+              <span id="term-status-text">idle</span>
+            </span>
+          </div>
+          <div class="terminal-body" id="terminal-body">
+            <div class="term-line term-hint"><span class="term-punct">//</span> submit a dispute above — events stream here as JSON</div>
+          </div>
+          <button class="term-pin" id="term-pin" hidden>↓ new events</button>
+        </div>
       </div>
     </section>
 
@@ -257,34 +326,73 @@
           <div class="eyebrow">04 · deployment gate</div>
         </header>
 
-        <figure class="kinetic">
-          <div class="kinetic-num mono" id="k-num">0%</div>
-          <div class="kinetic-underline" id="k-underline"></div>
-          <figcaption class="kinetic-cap">
-            <span class="mono dim">accuracy · gate at 90%</span>
-            <span class="kinetic-delta mono" id="k-delta">—</span>
-          </figcaption>
-        </figure>
+        <!-- Row 1: Accuracy headline with sparkline -->
+        <div class="gate-row gate-hero-row">
+          <div class="gate-hero">
+            <div class="gate-num" id="k-num">0%</div>
+            <div class="gate-hero-meta mono">
+              <div class="mono dim">/ 90% gate</div>
+              <div class="gate-delta mono" id="k-delta">—</div>
+            </div>
+          </div>
+          <div class="gate-sparkline-wrap">
+            <svg class="gate-sparkline" id="k-sparkline" viewBox="0 0 280 64"></svg>
+            <div class="gate-sparkline-label mono">18 cases · pass/fail</div>
+          </div>
+        </div>
+
+        <!-- Row 2: Scrubbable HITL threshold -->
+        <div class="gate-row gate-scrub-row">
+          <div class="gate-row-head">
+            <div class="subheading">HITL threshold <span class="dim">· drag to reclassify</span></div>
+            <div class="tau-val mono" id="tau-val">τ = 0.50</div>
+          </div>
+          <svg id="threshold-svg" class="threshold-svg" viewBox="0 0 820 110" aria-label="Scrubbable threshold"></svg>
+          <div class="gate-row-foot">
+            <div class="tau-stat">
+              <div class="tau-stat-v mono" id="tau-accuracy">—</div>
+              <div class="tau-stat-l mono">effective accuracy</div>
+            </div>
+            <div class="tau-stat">
+              <div class="tau-stat-v mono" id="tau-hitl-count">—</div>
+              <div class="tau-stat-l mono">escalated to human</div>
+            </div>
+            <div class="tau-stat">
+              <div class="tau-stat-v mono" id="tau-gate-status">—</div>
+              <div class="tau-stat-l mono">gate</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 3: Tufte bullet graphs -->
+        <div class="gate-row gate-bullets-row">
+          <div class="bullet" data-bullet="p95">
+            <div class="bullet-head">
+              <span class="bullet-label mono">p95 latency</span>
+              <span class="bullet-val mono" id="bullet-p95-val">—</span>
+            </div>
+            <svg class="bullet-svg" id="bullet-p95" viewBox="0 0 280 20"></svg>
+          </div>
+          <div class="bullet" data-bullet="cost">
+            <div class="bullet-head">
+              <span class="bullet-label mono">$ / case</span>
+              <span class="bullet-val mono" id="bullet-cost-val">—</span>
+            </div>
+            <svg class="bullet-svg" id="bullet-cost" viewBox="0 0 280 20"></svg>
+          </div>
+          <div class="bullet" data-bullet="esc">
+            <div class="bullet-head">
+              <span class="bullet-label mono">escalation recall</span>
+              <span class="bullet-val mono" id="bullet-esc-val">—</span>
+            </div>
+            <svg class="bullet-svg" id="bullet-esc" viewBox="0 0 280 20"></svg>
+          </div>
+        </div>
 
         <div class="verdict-card" id="verdict-card">
           <div class="verdict-title mono" id="verdict-text">—</div>
           <div class="verdict-detail" id="verdict-detail">—</div>
         </div>
-
-        <div class="waffle-section">
-          <div class="waffle-head">
-            <div class="subheading">18 cases · outcome</div>
-            <div class="waffle-legend">
-              <span class="wl"><i class="wl-dot wl-auto"></i>auto_refund</span>
-              <span class="wl"><i class="wl-dot wl-hitl"></i>human_review</span>
-              <span class="wl"><i class="wl-dot wl-deny"></i>deny</span>
-              <span class="wl"><i class="wl-dot wl-fail"></i>fail</span>
-            </div>
-          </div>
-          <svg id="waffle" viewBox="0 0 720 120" aria-label="Case outcomes waffle"></svg>
-        </div>
-
-        <div class="metric-strip" id="metric-strip"></div>
       </div>
     </section>
 
@@ -299,20 +407,33 @@
       <div class="zone-detail zone-cases">
         <header class="z-head">
           <div class="eyebrow">05 · per-case</div>
-          <h2 class="z-title">Eighteen runs, plotted.</h2>
+          <h2 class="z-title">Eighteen real runs.</h2>
           <p class="z-sub">
-            Each dot is a case. Horizontal position is measured latency. Color is the action the agent
-            took. Force-bumped to avoid overlap. Hover any dot to read the case.
+            Each dot is one case. Horizontal axis is how long it took; vertical axis is the dollar amount
+            in dispute. Color is the action the agent took. Hollow dots failed the deployment gate.
+            Hover any dot to read the case.
           </p>
         </header>
 
-        <div class="swarm-wrap">
-          <svg id="beeswarm" viewBox="0 0 900 380" aria-label="Case beeswarm"></svg>
-          <div class="swarm-tip" id="swarm-tip" hidden>
-            <div class="swarm-tip-head mono" id="swarm-tip-id">—</div>
-            <div class="swarm-tip-chips" id="swarm-tip-chips"></div>
-            <div class="swarm-tip-body" id="swarm-tip-body">—</div>
+        <div class="scatter-wrap">
+          <svg id="scatter-svg" viewBox="0 0 900 400" aria-label="Cases scatter plot"></svg>
+          <div class="scatter-legend mono">
+            <div class="sl-row"><span class="sl-dot" style="background:#3730a3"></span>auto_refund</div>
+            <div class="sl-row"><span class="sl-dot" style="background:#b45309"></span>human_review</div>
+            <div class="sl-row"><span class="sl-dot" style="background:#57534e"></span>deny</div>
+            <div class="sl-sep"></div>
+            <div class="sl-row"><span class="sl-ring"></span>failed gate</div>
           </div>
+        </div>
+
+        <div class="scatter-detail" id="scatter-detail" hidden>
+          <div class="sd-head">
+            <span class="sd-id mono" id="sd-id">—</span>
+            <div class="sd-chips" id="sd-chips"></div>
+          </div>
+          <blockquote class="sd-msg" id="sd-msg">—</blockquote>
+          <div class="sd-agent-label mono">agent response</div>
+          <div class="sd-agent" id="sd-agent">—</div>
         </div>
       </div>
     </section>
@@ -327,22 +448,66 @@
 
       <div class="zone-detail zone-rollback">
         <header class="z-head">
-          <div class="eyebrow">06 · guardrail rollback</div>
-          <h2 class="z-title">Same input, twice.</h2>
+          <div class="eyebrow">06 · guardrail</div>
+          <h2 class="z-title">The agent refused to send the bad draft.</h2>
           <p class="z-sub">
-            The second run has the Reg E phrases stripped from the Explainer's output. The agent's
-            own post-check catches it and routes to human review. The divergence is at step&nbsp;04.
+            Same dispute, same input. Second run: we strip the Reg&nbsp;E phrases from the Explainer's
+            output — simulating a post-processor regression. The agent's own post-check catches it at
+            the <em>draft</em> stage and routes to human review instead of shipping a non-compliant
+            message.
           </p>
         </header>
 
         <div class="rb-actions">
           <button class="btn btn-primary btn-sm" id="rb-play">▸ Play</button>
-          <button class="btn btn-ghost btn-sm" id="rb-play-live">Live</button>
+          <button class="btn btn-ghost btn-sm" id="rb-play-live">Run real API</button>
           <button class="btn btn-ghost btn-sm" id="rb-reset">↺ Reset</button>
           <span class="mono dim rb-state" id="rb-state">idle</span>
         </div>
 
-        <svg id="slopegraph" viewBox="0 0 720 420" aria-label="Clean vs tampered slopegraph"></svg>
+        <div class="typewriter-pair">
+          <div class="ms-page ms-page-clean" id="ms-clean">
+            <div class="ms-head">
+              <span class="rb-badge rb-badge-a mono">Exhibit&nbsp;A</span>
+              <span class="ms-title">clean draft</span>
+              <span class="ms-caret mono" id="ms-clean-caret"></span>
+            </div>
+            <div class="ms-body" id="ms-clean-body"></div>
+            <div class="ms-stamp ms-stamp-ship" id="ms-clean-stamp" hidden>
+              <span class="stamp-inner">SHIPPED</span>
+              <span class="stamp-sub mono">auto_refund · $24.99</span>
+            </div>
+          </div>
+
+          <div class="ms-page ms-page-tampered" id="ms-tampered">
+            <div class="ms-head">
+              <span class="rb-badge rb-badge-b mono">Exhibit&nbsp;B</span>
+              <span class="ms-title">tampered · Reg&nbsp;E phrases stripped</span>
+              <span class="ms-caret mono" id="ms-tamp-caret"></span>
+            </div>
+            <div class="ms-body" id="ms-tamp-body"></div>
+            <div class="ms-stamp ms-stamp-blocked" id="ms-tampered-stamp" hidden>
+              <span class="stamp-inner">BLOCKED</span>
+              <span class="stamp-sub mono">non-compliant · rolled back</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hitl-envelope" id="hitl-envelope" hidden>
+          <div class="he-arrow"></div>
+          <div class="he-card">
+            <div class="he-head mono">↳ human review queue</div>
+            <div class="he-body">
+              Case paused · a specialist will reach out within 45 business days.
+              <span class="dim"> Never sent to the customer.</span>
+            </div>
+          </div>
+        </div>
+
+        <p class="rb-caption">
+          <em>The guardrail read its own draft, flagged three missing Reg&nbsp;E phrases, and handed
+          the case to a human.</em>
+        </p>
       </div>
     </section>
 
@@ -360,10 +525,12 @@
           <h2 class="z-title">The model is 10% of the agent.</h2>
           <p class="z-sub">
             The other 90% lives in these six files — context, tools, orchestration, memory, evaluation,
-            guardrails. The work that turns a prototype into something you can ship.
+            guardrails. Hover a stratum to inspect the code.
           </p>
         </header>
-        <div class="harness-grid" id="harness-grid"></div>
+        <div class="harness-stack-wrap">
+          <svg id="harness-iso" viewBox="0 0 1060 540" aria-label="Harness strata — cross-section"></svg>
+        </div>
       </div>
     </section>
 
