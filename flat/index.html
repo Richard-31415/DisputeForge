@@ -530,6 +530,165 @@
         </div>
       </div>
     </section>
+    <!-- ============ ZONE 08 · PIPELINE ============ -->
+    <section class="zone" data-zone-idx="7" data-zone-id="pipeline" data-x="3900" data-y="900" data-w="1100" data-h="760">
+      <div class="zone-wallpaper">
+        <div class="wall-num">08</div>
+        <div class="wall-title">Pipeline</div>
+        <div class="wall-sub">deep trace · every hop</div>
+      </div>
+
+      <div class="zone-detail zone-pipeline">
+        <header class="z-head z-head-tight">
+          <div class="eyebrow">08 · pipeline trace</div>
+          <h2 class="z-title">Every step, in full.</h2>
+        </header>
+
+        <!-- compact submit form -->
+        <div class="p8-form">
+          <div class="p8-presets">
+            <button class="p8-preset" data-p8-preset="small_fraud">$24 fraud</button>
+            <button class="p8-preset" data-p8-preset="big_fraud">$842 fraud</button>
+            <button class="p8-preset" data-p8-preset="remorse">buyer's remorse</button>
+            <button class="p8-preset" data-p8-preset="injection">injection</button>
+          </div>
+          <div class="p8-form-row">
+            <textarea id="p8-message" rows="2" placeholder="I did not make this charge…">I did not make this $24.99 charge — I've never heard of this merchant.</textarea>
+          </div>
+          <div class="p8-form-row">
+            <div class="field-input-wrap p8-amount-wrap"><span class="field-prefix">$</span><input id="p8-amount" type="number" step="0.01" min="0.01" value="24.99" /></div>
+            <input id="p8-merchant" type="text" value="SketchyGadgets" placeholder="Merchant" />
+            <button class="btn btn-primary btn-sm" id="p8-submit"><span class="btn-label">Run agent</span></button>
+          </div>
+        </div>
+
+        <!-- status bar -->
+        <div class="p8-status-bar">
+          <span class="pf-run-dot" id="p8-dot"></span>
+          <span class="p8-phase mono" id="p8-phase">idle — fill the form and click Run agent</span>
+          <span class="mono dim" id="p8-timer"></span>
+        </div>
+
+        <!-- scrollable event log -->
+        <div class="p8-log" id="p8-log">
+          <div class="p8-idle">
+            <div class="p8-idle-nodes">
+              <span class="p8-idle-n">01 communicator</span>
+              <span class="p8-idle-arr">→</span>
+              <span class="p8-idle-n">02 planner + RAG</span>
+              <span class="p8-idle-arr">→</span>
+              <span class="p8-idle-n">03 executor</span>
+              <span class="p8-idle-arr">→</span>
+              <span class="p8-idle-n">04 evaluator</span>
+              <span class="p8-idle-arr">→</span>
+              <span class="p8-idle-n">05 explainer</span>
+            </div>
+            <p class="p8-idle-hint">Each card expands with live data as events arrive.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ZONE 10 · ENSEMBLE ============ -->
+    <section class="zone" data-zone-idx="9" data-zone-id="ensemble" data-x="5200" data-y="900" data-w="1100" data-h="760">
+      <div class="zone-wallpaper">
+        <div class="wall-num">10</div>
+        <div class="wall-title">Ensemble</div>
+        <div class="wall-sub">escalate-on-any · 3 parallel planners</div>
+      </div>
+
+      <div class="zone-detail zone-ensemble">
+        <header class="z-head">
+          <div class="eyebrow">10 · ensemble planner</div>
+          <h2 class="z-title">If any agent hesitates, escalate.</h2>
+          <p class="z-sub">
+            Three planner instances run in parallel. If <em>any</em> vote lands on
+            human_review — or fails to respond — the final action is locked to human
+            review. Consensus is required for automated resolution.
+          </p>
+        </header>
+
+        <!-- scenario picker -->
+        <div class="ens-controls">
+          <button class="ens-scenario active" data-scenario="safe">all agree · auto_refund</button>
+          <button class="ens-scenario" data-scenario="one_doubts">one hesitates · human_review</button>
+          <button class="ens-scenario" data-scenario="one_fails">one errors · human_review</button>
+          <button class="ens-scenario" data-scenario="deny">clear deny</button>
+          <button class="btn btn-primary btn-sm" id="ens-run">▸ Simulate</button>
+        </div>
+
+        <!-- three vote lanes -->
+        <div class="ens-arena">
+          <div class="ens-lanes">
+            <div class="ens-lane">
+              <div class="ens-lane-label mono">Planner 1</div>
+              <div class="ens-spinner" id="ens-spin-0"></div>
+              <div class="ens-vote-box" id="ens-vote-0">—</div>
+            </div>
+            <div class="ens-lane-divider"></div>
+            <div class="ens-lane">
+              <div class="ens-lane-label mono">Planner 2</div>
+              <div class="ens-spinner" id="ens-spin-1"></div>
+              <div class="ens-vote-box" id="ens-vote-1">—</div>
+            </div>
+            <div class="ens-lane-divider"></div>
+            <div class="ens-lane">
+              <div class="ens-lane-label mono">Planner 3</div>
+              <div class="ens-spinner" id="ens-spin-2"></div>
+              <div class="ens-vote-box" id="ens-vote-2">—</div>
+            </div>
+          </div>
+
+          <!-- merge gate -->
+          <div class="ens-gate" id="ens-gate">
+            <div class="ens-gate-lines">
+              <div class="ens-gate-line"></div>
+              <div class="ens-gate-node">escalate-on-any</div>
+              <div class="ens-gate-line"></div>
+            </div>
+          </div>
+
+          <!-- final locked action -->
+          <div class="ens-result" id="ens-result">
+            <div class="ens-result-label mono">final action</div>
+            <div class="ens-result-action" id="ens-result-action">—</div>
+            <div class="ens-result-reason" id="ens-result-reason"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ZONE 09 · ABLATION ============ -->
+    <section class="zone" data-zone-idx="8" data-zone-id="ablation" data-x="5200" data-y="0" data-w="1100" data-h="760">
+      <div class="zone-wallpaper">
+        <div class="wall-num">09</div>
+        <div class="wall-title">Ablation</div>
+        <div class="wall-sub">harness value · 30 cases</div>
+      </div>
+
+      <div class="zone-detail zone-ablation">
+        <header class="z-head">
+          <div class="eyebrow">09 · ablation study</div>
+          <h2 class="z-title">Each layer earns its place.</h2>
+          <p class="z-sub">
+            Seven configurations — six ablation variants plus ensemble planner. 30 cases, OpenAI provider.
+            Raw model at the floor; full harness at the ceiling.
+          </p>
+        </header>
+
+        <div class="abl-legend">
+          <span class="abl-swatch" style="background:#3730a3"></span><span class="abl-lbl">Pass Rate</span>
+          <span class="abl-swatch" style="background:#818cf8"></span><span class="abl-lbl">Escalation Recall</span>
+          <span class="abl-swatch abl-swatch-full" style="background:#15803d"></span><span class="abl-lbl">Pass Rate (full harness)</span>
+          <span class="abl-swatch abl-swatch-full" style="background:#4ade80"></span><span class="abl-lbl">Escalation Recall (full harness)</span>
+        </div>
+
+        <div class="abl-chart-wrap">
+          <svg id="ablation-svg" viewBox="0 0 920 320" class="abl-svg" aria-label="Ablation study grouped bar chart"></svg>
+        </div>
+      </div>
+    </section>
+
 
   </div>
 </main>
