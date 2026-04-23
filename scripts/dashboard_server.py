@@ -34,6 +34,7 @@ from sse_starlette.sse import EventSourceResponse
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 DASHBOARD_DIR = REPO_ROOT / "dashboard"
 
+
 # Make `src.*` and `harness.*` importable when running this script directly.
 sys.path.insert(0, str(REPO_ROOT))
 
@@ -301,17 +302,12 @@ if DASHBOARD_DIR.exists():
     app.mount("/dashboard", StaticFiles(directory=str(DASHBOARD_DIR), html=True),
               name="dashboard")
 
-# Quiet 2D alternate site, completely independent.
-FLAT_DIR = REPO_ROOT / "flat"
-if FLAT_DIR.exists():
-    app.mount("/flat", StaticFiles(directory=str(FLAT_DIR), html=True), name="flat")
-
 
 def main():
     import uvicorn
 
     port = int(os.environ.get("PORT", 8765))
-    print(f"DisputeForge dashboard server — http://localhost:{port}/dashboard/")
+    print(f"DisputeForge — http://localhost:{port}/dashboard/")
     uvicorn.run(
         "scripts.dashboard_server:app",
         host="0.0.0.0",

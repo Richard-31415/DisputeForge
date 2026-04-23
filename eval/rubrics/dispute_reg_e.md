@@ -106,4 +106,4 @@ Name one out loud during the demo (Tradeoffs, rubric 10 pts):
 - **Fixture size (18 cases).** Not a production eval set. Good for a deployment gate demo; not a regression net. Named explicitly on the slide.
 - **LLM judge is Anthropic-on-Anthropic.** Cheap, consistent, but shares some failure modes with the Explainer. A real eval ecosystem cycles judges (e.g., GPT-4.1 + Gemini) — out of scope for 22h.
 - **Cost column is an estimate.** Per-call USD in `eval/runner.py:COST_PER_CALL_BY_ROLE` is a model-card approximation until we pull real usage from the Anthropic response objects. Treat it as order-of-magnitude.
-- **No tool-call side effects tested.** The agent has `src/tools/nessie.py` but the eval runs in synthetic mode. The deployable claim is "agent decisioning" — not "agent moves money end-to-end."
+- **No tool-call side effects tested.** The eval runs in synthetic mode. The deployable claim is "agent decisioning" — not "agent moves money end-to-end."

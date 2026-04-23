@@ -3,566 +3,706 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>DisputeForge</title>
+<title>DisputeForge — workshop</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="styles.css" />
 <script src="data.js"></script>
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://unpkg.com/three@0.163.0/build/three.module.js",
-    "three/addons/": "https://unpkg.com/three@0.163.0/examples/jsm/"
-  }
-}
-</script>
 </head>
-<body data-mode="live">
+<body data-zoom-mode="zone" data-zone="0">
 
-<!-- ambient backdrop -->
-<div class="bg-gradient"></div>
-<div class="bg-grid"></div>
-<div class="bg-glow bg-glow-1"></div>
-<div class="bg-glow bg-glow-2"></div>
-
-<!-- persistent 3D canvas -->
-<canvas id="three-canvas"></canvas>
-<div class="scene-vignette"></div>
-
-<!-- top bar -->
-<header class="topbar">
+<!-- top-left brand + keyboard hints -->
+<aside class="hud hud-left">
   <div class="brand">
     <div class="brand-mark"></div>
     <div class="brand-text">
       <div class="brand-name">DisputeForge</div>
-      <div class="brand-sub">Reg E dispute agent</div>
+      <div class="brand-sub">workshop · v0.2</div>
     </div>
   </div>
-
-  <nav class="tabs" role="tablist">
-    <button class="tab tab-primary"  data-mode="live" aria-selected="true">Live Run</button>
-    <button class="tab tab-primary"  data-mode="eval">Eval</button>
-    <button class="tab tab-primary"  data-mode="rollback">Rollback</button>
-    <span class="tabs-sep"></span>
-    <button class="tab tab-secondary" data-mode="architecture">Architecture</button>
-    <button class="tab tab-secondary" data-mode="flow">Flow</button>
-    <button class="tab tab-secondary" data-mode="trace">Trace</button>
-    <button class="tab tab-secondary" data-mode="harness">Harness</button>
-  </nav>
-
-  <div class="topbar-right">
-    <div class="pill pill-status" id="server-pill">
-      <span class="pill-dot"></span>
-      <span id="server-pill-text">…</span>
-    </div>
+  <div class="hud-hints">
+    <div class="hint"><kbd>1</kbd>–<kbd>7</kbd> jump to zone</div>
+    <div class="hint"><kbd>←</kbd><kbd>→</kbd> adjacent zones</div>
+    <div class="hint"><kbd>esc</kbd> zoom out</div>
   </div>
-</header>
-
-<main class="shell">
-
-  <!-- ====== LIVE RUN ====== -->
-  <section class="mode mode-live" data-mode="live">
-    <div class="panel glass">
-      <header class="panel-head">
-        <div class="eyebrow">live agent · 4-role</div>
-        <h1 class="title">Submit a dispute.</h1>
-        <p class="sub">
-          Type anything. The real agent runs. Watch the packet fly through the scene as each role completes.
-        </p>
-      </header>
-
-      <div class="form">
-        <div class="presets">
-          <button class="preset" data-preset="small_fraud">Small fraud $24</button>
-          <button class="preset" data-preset="big_fraud">Big fraud $842</button>
-          <button class="preset" data-preset="remorse">Buyer's remorse</button>
-          <button class="preset" data-preset="injection">Prompt injection</button>
-        </div>
-
-        <label class="field">
-          <div class="field-label">User message</div>
-          <textarea id="df-message" rows="3" placeholder="I did not make this charge — please refund it."></textarea>
-        </label>
-
-        <div class="field-row">
-          <label class="field">
-            <div class="field-label">Amount ($)</div>
-            <input id="df-amount" type="number" step="0.01" min="0.01" value="24.99" />
-          </label>
-          <label class="field">
-            <div class="field-label">Merchant</div>
-            <input id="df-merchant" type="text" value="SketchyGadgets" />
-          </label>
-        </div>
-
-        <button class="btn btn-primary btn-run" id="df-submit">
-          <span class="btn-label">Run agent</span>
-          <span class="btn-chevron">›</span>
-        </button>
-      </div>
-
-      <!-- live run progress (hidden until submit) -->
-      <div class="run-progress" id="run-progress" hidden>
-        <div class="run-progress-head">
-          <span class="run-phase" id="run-phase">starting…</span>
-          <span class="run-timer mono" id="run-timer">0.0s</span>
-        </div>
-        <ol class="run-steps" id="run-steps">
-          <li class="run-step" data-role="communicator">
-            <span class="run-step-dot"></span>
-            <span class="run-step-name">Communicator</span>
-            <span class="run-step-detail"></span>
-          </li>
-          <li class="run-step" data-role="planner">
-            <span class="run-step-dot"></span>
-            <span class="run-step-name">Planner</span>
-            <span class="run-step-detail"></span>
-          </li>
-          <li class="run-step" data-role="evaluator">
-            <span class="run-step-dot"></span>
-            <span class="run-step-name">Evaluator</span>
-            <span class="run-step-detail"></span>
-          </li>
-          <li class="run-step" data-role="explainer">
-            <span class="run-step-dot"></span>
-            <span class="run-step-name">Explainer</span>
-            <span class="run-step-detail"></span>
-          </li>
-          <li class="run-step" data-role="hitl" hidden>
-            <span class="run-step-dot"></span>
-            <span class="run-step-name">HITL</span>
-            <span class="run-step-detail"></span>
-          </li>
-        </ol>
-      </div>
-
-      <!-- final result -->
-      <div class="run-result" id="run-result" hidden>
-        <div class="run-result-head">
-          <span class="chip" id="run-result-chip">—</span>
-          <span class="run-result-meta mono" id="run-result-meta">—</span>
-        </div>
-        <div class="run-result-label">Customer response</div>
-        <div class="run-result-message" id="run-result-message">—</div>
-        <button class="btn btn-ghost btn-sm" id="run-reset">↺ new dispute</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- ====== EVAL ====== -->
-  <section class="mode mode-eval" data-mode="eval">
-    <div class="panel glass">
-      <header class="panel-head">
-        <div class="eyebrow">deployment gate</div>
-        <h1 class="title">
-          <span id="eval-accuracy" class="title-accent">—</span>
-          <span class="title-rest">accuracy across 18 cases.</span>
-        </h1>
-        <p class="sub" id="eval-sub">Loading run data…</p>
-      </header>
-
-      <div class="gate-box" id="gate-box">
-        <div class="gate-verdict">
-          <div class="gate-verdict-text" id="gate-verdict-text">—</div>
-          <div class="gate-verdict-detail" id="gate-verdict-detail">—</div>
-        </div>
-        <div class="gate-kpis">
-          <div class="kpi">
-            <div class="kpi-value mono" id="kpi-escalation">—</div>
-            <div class="kpi-label">escalation recall</div>
-          </div>
-          <div class="kpi">
-            <div class="kpi-value mono" id="kpi-cost">—</div>
-            <div class="kpi-label">avg $ / case</div>
-          </div>
-          <div class="kpi">
-            <div class="kpi-value mono" id="kpi-p95">—</div>
-            <div class="kpi-label">p95 latency</div>
-          </div>
-          <div class="kpi">
-            <div class="kpi-value mono" id="kpi-auto">—</div>
-            <div class="kpi-label">auto-resolve %</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="cases-head">
-        <div class="cases-title">18 cases</div>
-        <div class="cases-legend">
-          <span class="legend-chip legend-pass">pass</span>
-          <span class="legend-chip legend-fail">fail</span>
-        </div>
-      </div>
-      <div class="cases-list" id="cases-list"></div>
-    </div>
-
-    <!-- case detail popover (appears on click) -->
-    <aside class="case-pop" id="case-pop" hidden>
-      <div class="case-pop-head">
-        <span class="mono" id="case-pop-id">—</span>
-        <button class="case-pop-close" id="case-pop-close" aria-label="Close">×</button>
-      </div>
-      <div class="case-pop-chips" id="case-pop-chips"></div>
-      <div class="case-pop-section">
-        <div class="case-pop-label">User said</div>
-        <div class="case-pop-body" id="case-pop-user">—</div>
-      </div>
-      <div class="case-pop-section">
-        <div class="case-pop-label">Agent responded</div>
-        <div class="case-pop-body" id="case-pop-agent">—</div>
-      </div>
-      <div class="case-pop-section">
-        <div class="case-pop-label">Ground truth</div>
-        <div class="case-pop-body dim" id="case-pop-gt">—</div>
-      </div>
-    </aside>
-  </section>
-
-  <!-- ====== ARCHITECTURE ====== -->
-  <section class="mode mode-architecture" data-mode="architecture">
-    <div class="panel glass">
-      <header class="panel-head">
-        <div class="eyebrow">02 · chat concierge mirror</div>
-        <h1 class="title">5 roles, 3 model tiers.</h1>
-        <p class="sub">
-          Each role is a different shape in the scene. Haiku for cheap parsing, Sonnet for
-          reasoning, deterministic code where an LLM judge can't be trusted. Click any card
-          or shape to inspect.
-        </p>
-      </header>
-      <div class="arch-cards" id="arch-cards"></div>
-      <div class="arch-routing">
-        <div class="arch-routing-head">routing rules</div>
-        <div class="arch-routing-rules">
-          <div class="arch-rule"><span class="mono">communicator</span> → <span class="mono">planner</span> <em>· default</em></div>
-          <div class="arch-rule"><span class="mono">communicator</span> → <span class="mono">hitl</span> <em>· adversarial marker</em></div>
-          <div class="arch-rule"><span class="mono">evaluator</span> → <span class="mono">planner</span> <em>· replan (≤2)</em></div>
-          <div class="arch-rule"><span class="mono">evaluator</span> → <span class="mono">hitl</span> <em>· escalate</em></div>
-          <div class="arch-rule"><span class="mono">explainer</span> → <span class="mono">hitl</span> <em>· reg E rollback</em></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ====== FLOW ====== -->
-  <section class="mode mode-flow" data-mode="flow">
-    <div class="flow-container">
-      <header class="flow-head">
-        <div class="eyebrow">pipeline · step by step</div>
-        <h1 class="flow-title">How a dispute travels through the agent.</h1>
-        <p class="flow-sub">Every node, every routing decision, every tool call and RAG retrieval.</p>
-      </header>
-
-      <div class="flow-pipeline">
-
-        <!-- INPUT -->
-        <div class="flow-terminal flow-terminal-start">
-          <span class="flow-term-icon">▸</span>
-          user dispute message + transaction context
-        </div>
-        <div class="flow-conn"></div>
-
-        <!-- COMMUNICATOR -->
-        <div class="flow-stage">
-          <div class="flow-node" style="--role-c:#00d9ff">
-            <div class="flow-node-head">
-              <span class="flow-node-name">Communicator</span>
-              <span class="flow-node-model">claude-haiku-4-5</span>
-            </div>
-            <div class="flow-node-steps">
-              <div class="flow-step">Parse intent → dispute_type, claim, confidence</div>
-              <div class="flow-step flow-step-guard">
-                <span class="flow-step-icon">⚑</span>
-                Scan for 5 adversarial markers (case-insensitive)
-                <div class="flow-tags">
-                  <span class="flow-tag">"ignore previous"</span>
-                  <span class="flow-tag">"disregard prior"</span>
-                  <span class="flow-tag">"system prompt"</span>
-                  <span class="flow-tag">"you are now"</span>
-                  <span class="flow-tag">"jailbreak"</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="flow-callout flow-callout-hitl">
-            <div class="flow-co-label">if adversarial</div>
-            <div class="flow-co-arrow">→</div>
-            <div class="flow-co-dest" style="--dest-c:#ff6b6b">HITL</div>
-            <div class="flow-co-note">short-circuits before planning</div>
-          </div>
-        </div>
-        <div class="flow-conn flow-conn-labeled"><span class="flow-conn-label">clean intent</span></div>
-
-        <!-- PLANNER -->
-        <div class="flow-stage">
-          <div class="flow-node" style="--role-c:#7aed92">
-            <div class="flow-node-head">
-              <span class="flow-node-name">Planner</span>
-              <span class="flow-node-model">claude-sonnet-4-6</span>
-            </div>
-            <div class="flow-node-steps">
-              <div class="flow-step flow-step-rag">
-                <span class="flow-step-icon">◎</span>
-                retrieve_policy → Reg E statute + CFPB exam procedures
-              </div>
-              <div class="flow-step">LLM: proposed_action (auto_refund / human_review / deny)</div>
-              <div class="flow-step">2–5 plan steps with tool names + rationale</div>
-              <div class="flow-step flow-step-dim">On replan: evaluator feedback injected into prompt</div>
-            </div>
-          </div>
-          <div class="flow-callout flow-callout-rag">
-            <div class="flow-rag-head">RAG · LlamaIndex</div>
-            <div class="flow-rag-doc"><span class="flow-rag-dot">◈</span> 12 CFR Part 1005 (Reg E statute)</div>
-            <div class="flow-rag-doc"><span class="flow-rag-dot">◈</span> CFPB EFTA exam procedures (PDF)</div>
-            <div class="flow-rag-meta">OpenAI embeddings · similarity top-k=4</div>
-          </div>
-        </div>
-        <div class="flow-conn"></div>
-
-        <!-- EXECUTOR -->
-        <div class="flow-stage">
-          <div class="flow-node" style="--role-c:#94a3b8">
-            <div class="flow-node-head">
-              <span class="flow-node-name">Executor</span>
-              <span class="flow-node-model">deterministic · no LLM · $0.00</span>
-            </div>
-            <div class="flow-node-steps">
-              <div class="flow-step">Dispatch each plan step against registered tool registry</div>
-              <div class="flow-step">Soft-capture failures — bad tool ≠ abort graph</div>
-              <div class="flow-step">Results → state.tool_results + trace entry</div>
-            </div>
-          </div>
-          <div class="flow-callout flow-callout-tools">
-            <div class="flow-tools-head">Tool registry</div>
-            <div class="flow-tool">fetch_transaction</div>
-            <div class="flow-tool">check_merchant_history</div>
-            <div class="flow-tool">issue_provisional_credit</div>
-            <div class="flow-tool">open_investigation</div>
-            <div class="flow-tool">notify_customer</div>
-            <div class="flow-tool">escalate_to_human</div>
-          </div>
-        </div>
-        <div class="flow-conn"></div>
-
-        <!-- EVALUATOR -->
-        <div class="flow-stage">
-          <div class="flow-node" style="--role-c:#ffd93d">
-            <div class="flow-node-head">
-              <span class="flow-node-name">Evaluator</span>
-              <span class="flow-node-model">deterministic · no LLM · $0.00</span>
-            </div>
-            <div class="flow-node-steps">
-              <div class="flow-step flow-step-check">Plan non-empty?</div>
-              <div class="flow-step flow-step-check">proposed_action in valid set?</div>
-              <div class="flow-step flow-step-check">auto_refund ∧ amount &gt; $50 → block</div>
-              <div class="flow-step flow-step-check">notify_customer step present?</div>
-            </div>
-          </div>
-          <div class="flow-callout flow-callout-eval">
-            <div class="flow-eval-route">
-              <div class="flow-co-label">fail · replan_count &lt; 2</div>
-              <div class="flow-co-arrow flow-co-arrow-up">↑</div>
-              <div class="flow-co-dest" style="--dest-c:#7aed92">back to Planner</div>
-              <div class="flow-co-note">evaluator feedback injected into next prompt</div>
-            </div>
-            <div class="flow-eval-route" style="margin-top:10px">
-              <div class="flow-co-label">fail · 2 replans exhausted</div>
-              <div class="flow-co-arrow">→</div>
-              <div class="flow-co-dest" style="--dest-c:#ff6b6b">HITL</div>
-              <div class="flow-co-note mono" style="font-size:10px">hitl_reason=evaluator_replan_exhausted</div>
-            </div>
-          </div>
-        </div>
-        <div class="flow-conn flow-conn-labeled"><span class="flow-conn-label">pass</span></div>
-
-        <!-- SNAPSHOT -->
-        <div class="flow-snapshot">
-          <span class="flow-snap-icon">◈</span>
-          <div class="flow-snap-body">
-            <span class="flow-snap-title">harness.snapshot</span>
-            <span class="flow-snap-desc">checkpoint taken before the write — snapshot_id logged to every trace entry</span>
-          </div>
-        </div>
-        <div class="flow-conn"></div>
-
-        <!-- EXPLAINER -->
-        <div class="flow-stage">
-          <div class="flow-node" style="--role-c:#c084fc">
-            <div class="flow-node-head">
-              <span class="flow-node-name">Explainer</span>
-              <span class="flow-node-model">claude-sonnet-4-6</span>
-            </div>
-            <div class="flow-node-steps">
-              <div class="flow-step">LLM: render customer-facing response</div>
-              <div class="flow-step flow-step-dim">For auto_refund: Reg E language required in system prompt</div>
-              <div class="flow-step flow-step-guard">
-                <span class="flow-step-icon">⚑</span>
-                Reg E post-check: scan output for 3 required phrases
-                <div class="flow-tags">
-                  <span class="flow-tag flow-tag-phrase">"provisional credit"</span>
-                  <span class="flow-tag flow-tag-phrase">"investigation"</span>
-                  <span class="flow-tag flow-tag-phrase">"business days"</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="flow-callout flow-callout-rollback">
-            <div class="flow-co-label">missing phrase</div>
-            <div class="flow-co-arrow">→</div>
-            <div class="flow-co-dest" style="--dest-c:#ff6b6b">HITL · rollback</div>
-            <div class="flow-co-note mono" style="font-size:10px">hitl_reason=reg_e_missing_phrases:[…]</div>
-            <div class="flow-co-note">non-compliant message never reaches customer</div>
-          </div>
-        </div>
-        <div class="flow-conn flow-conn-labeled"><span class="flow-conn-label">compliant</span></div>
-
-        <!-- OUTPUT -->
-        <div class="flow-terminal flow-terminal-end">
-          <span class="flow-term-icon">✓</span>
-          customer response · action_taken logged · case closed
-        </div>
-
-      </div><!-- /flow-pipeline -->
-    </div><!-- /flow-container -->
-  </section>
-
-  <!-- ====== TRACE ====== -->
-  <section class="mode mode-trace" data-mode="trace">
-    <div class="panel glass">
-      <header class="panel-head">
-        <div class="eyebrow">04 · per-run trace</div>
-        <h1 class="title">18 real runs.</h1>
-        <p class="sub">Pick any case to see its latency per role and the actual flight through the scene.</p>
-      </header>
-      <div class="trace-filter" role="group">
-        <button class="trace-filter-btn active" data-filter="all">All <span id="tf-count-all">18</span></button>
-        <button class="trace-filter-btn" data-filter="pass">Pass <span id="tf-count-pass">—</span></button>
-        <button class="trace-filter-btn" data-filter="fail">Fail <span id="tf-count-fail">—</span></button>
-      </div>
-      <div class="trace-picker" id="trace-picker"></div>
-      <div class="trace-waterfall-box" id="trace-waterfall-box" hidden>
-        <div class="trace-waterfall-head">
-          <span class="mono" id="tw-case-id">—</span>
-          <span class="mono dim" id="tw-total">—</span>
-        </div>
-        <div class="trace-waterfall" id="trace-waterfall"></div>
-      </div>
-    </div>
-    <aside class="case-pop case-pop-trace" id="trace-detail" hidden>
-      <div class="case-pop-head">
-        <span class="mono" id="trace-detail-id">—</span>
-        <button class="btn btn-ghost btn-sm" id="trace-replay">↻ replay flight</button>
-      </div>
-      <div class="case-pop-chips" id="trace-detail-chips"></div>
-      <div class="case-pop-section">
-        <div class="case-pop-label">User said</div>
-        <div class="case-pop-body" id="trace-detail-user">—</div>
-      </div>
-      <div class="case-pop-section">
-        <div class="case-pop-label">Agent responded</div>
-        <div class="case-pop-body" id="trace-detail-agent">—</div>
-      </div>
-      <div class="case-pop-section">
-        <div class="case-pop-label">Ground truth</div>
-        <div class="case-pop-body dim" id="trace-detail-gt">—</div>
-      </div>
-    </aside>
-  </section>
-
-  <!-- ====== HARNESS ====== -->
-  <section class="mode mode-harness" data-mode="harness">
-    <div class="harness-container">
-      <header class="harness-head">
-        <div class="eyebrow">06 · agent = model + harness</div>
-        <h1 class="harness-title">The model is 10% of the agent.</h1>
-        <p class="harness-sub">
-          The other 90% is six layers of harness engineering. Each is a glowing shape orbiting the scene.
-          Hover a card to light up the matching shape in 3D.
-        </p>
-      </header>
-      <div class="layers-grid-wide" id="layers-grid"></div>
-    </div>
-  </section>
-
-  <!-- ====== ROLLBACK ====== -->
-  <section class="mode mode-rollback" data-mode="rollback">
-    <div class="panel glass">
-      <header class="panel-head">
-        <div class="eyebrow">guardrails · rollback demo</div>
-        <h1 class="title">Same dispute, twice.</h1>
-        <p class="sub">
-          Second run: we strip the Reg E phrases from the Explainer's output. The agent's own post-check
-          catches it and routes to human review. The non-compliant message never reaches the customer.
-        </p>
-      </header>
-
-      <div class="rb-actions">
-        <button class="btn btn-primary" id="rb-play">
-          <span class="btn-label">▶ Play</span>
-        </button>
-        <button class="btn btn-ghost" id="rb-play-live">Play with real LLM</button>
-        <button class="btn btn-ghost" id="rb-reset">↺ Reset</button>
-      </div>
-
-      <div class="rb-status" id="rb-status">ready</div>
-
-      <div class="rb-compare">
-        <div class="rb-side rb-side-clean" id="rb-clean">
-          <div class="rb-side-head">
-            <span class="chip chip-auto">auto_refund</span>
-            <span class="rb-side-label">clean run</span>
-          </div>
-          <div class="rb-side-body" id="rb-clean-body">Press <span class="mono">▶ Play</span> to see the clean path.</div>
-          <div class="rb-side-phrases" id="rb-clean-phrases"></div>
-        </div>
-        <div class="rb-side rb-side-tampered" id="rb-tampered">
-          <div class="rb-side-head">
-            <span class="chip chip-hitl">human_review</span>
-            <span class="rb-side-label">tampered run</span>
-          </div>
-          <div class="rb-side-body" id="rb-tampered-body">Tampered message will appear here.</div>
-          <div class="rb-side-phrases" id="rb-tampered-phrases"></div>
-          <div class="rb-tampered-reason mono" id="rb-tampered-reason"></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-</main>
-
-<!-- small role popover (appears when you click a 3D node — any mode) -->
-<aside class="role-pop" id="role-pop" hidden>
-  <div class="role-pop-head">
-    <span class="role-pop-dot" id="role-pop-dot"></span>
-    <span class="role-pop-name" id="role-pop-name">—</span>
-    <button class="role-pop-close" id="role-pop-close" aria-label="Close">×</button>
-  </div>
-  <div class="role-pop-model mono" id="role-pop-model">—</div>
-  <div class="role-pop-body" id="role-pop-body">—</div>
-  <div class="role-pop-file mono" id="role-pop-file">—</div>
 </aside>
 
-<!-- layer popover (appears when you click a 3D harness orbit OR a layer card) -->
-<aside class="role-pop layer-pop" id="layer-pop" hidden>
-  <div class="role-pop-head">
-    <span class="role-pop-dot" id="layer-pop-dot"></span>
-    <span class="role-pop-name" id="layer-pop-name">—</span>
-    <button class="role-pop-close" id="layer-pop-close" aria-label="Close">×</button>
+<!-- top-right minimap nav -->
+<aside class="hud hud-right">
+  <div class="minimap-wrap">
+    <svg class="minimap" id="minimap" viewBox="0 0 260 120" aria-label="Workshop overview"></svg>
+    <div class="minimap-list" id="minimap-list"></div>
   </div>
-  <div class="role-pop-model mono" id="layer-pop-index">—</div>
-  <div class="role-pop-body" id="layer-pop-body">—</div>
-  <div class="role-pop-file mono" id="layer-pop-file">—</div>
+  <div class="status-row">
+    <span class="dot" id="status-dot"></span>
+    <span id="status-text">server…</span>
+  </div>
 </aside>
 
-<!-- floating hint for 3D scene -->
-<div class="scene-hint" id="scene-hint">
-  drag to rotate · click a node to inspect a role
+<!-- zone chrome: current zone indicator (bottom-left) -->
+<div class="zone-chrome">
+  <div class="zone-chrome-row">
+    <span class="zone-chrome-num mono" id="chrome-num">01</span>
+    <span class="zone-chrome-name" id="chrome-name">Overview</span>
+  </div>
+  <div class="zone-chrome-counter mono" id="chrome-counter">01 / 07</div>
 </div>
 
-<div class="toast" id="toast"></div>
-<div class="spark" id="spark"></div>
+<!-- Viewport-fixed paper-fiber overlay — breathes via baseFrequency tween -->
+<svg class="fiber-layer" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="fiber-filter" x="0" y="0" width="100%" height="100%">
+      <feTurbulence id="fiber-turb" type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="4"/>
+      <feColorMatrix values="0 0 0 0 0.06   0 0 0 0 0.06   0 0 0 0 0.05   0 0 0 0.045 0"/>
+    </filter>
+  </defs>
+  <rect width="100%" height="100%" filter="url(#fiber-filter)"/>
+</svg>
 
-<script type="module" src="dashboard.js"></script>
+<!-- Viewport-fixed crop marks (always visible, irrespective of plane zoom) -->
+<div class="crop-marks" aria-hidden="true">
+  <svg class="cm cm-tl" viewBox="0 0 24 24"><path d="M 1 12 L 1 1 L 12 1" class="cm-stroke"/></svg>
+  <svg class="cm cm-tr" viewBox="0 0 24 24"><path d="M 12 1 L 23 1 L 23 12" class="cm-stroke"/></svg>
+  <svg class="cm cm-bl" viewBox="0 0 24 24"><path d="M 1 12 L 1 23 L 12 23" class="cm-stroke"/></svg>
+  <svg class="cm cm-br" viewBox="0 0 24 24"><path d="M 12 23 L 23 23 L 23 12" class="cm-stroke"/></svg>
+  <div class="cm-serial cm-serial-bl">plate · df / 07</div>
+  <div class="cm-serial cm-serial-tr">rev 0.2</div>
+</div>
+
+<!-- the main pannable plane -->
+<main class="plane" id="plane">
+  <div class="plane-content" id="plane-content">
+    <!-- Plane-attached decoration: hairline grid + registration marks + sweep.
+         Rendered programmatically in renderPlaneDeco() so we only compute once. -->
+    <svg class="plane-deco" id="plane-deco"
+         viewBox="0 0 5000 1700" preserveAspectRatio="none" aria-hidden="true"></svg>
+
+    <!-- ============ ZONE 01 · OVERVIEW ============ -->
+    <section class="zone" data-zone-idx="0" data-zone-id="overview" data-x="0" data-y="0" data-w="1100" data-h="760">
+      <div class="zone-wallpaper">
+        <div class="wall-num">01</div>
+        <div class="wall-title">Overview</div>
+      </div>
+
+      <div class="zone-detail zone-overview">
+        <div class="eyebrow">workshop · disputeforge</div>
+        <h1 class="hero">
+          A Reg&nbsp;E dispute agent<br/>
+          <em>that refuses to deploy itself</em><br/>
+          until it's safe.
+        </h1>
+        <p class="lede">
+          Five deterministic roles. Three model tiers. A deployment gate that treats
+          <em>ship&nbsp;it&nbsp;Monday</em> as the actual bar. This workshop spreads seven chapters
+          across a single canvas — pan, zoom, navigate by keyboard.
+        </p>
+        <div class="kpi-row">
+          <div class="kpi">
+            <div class="kpi-v mono" id="ov-accuracy">—</div>
+            <div class="kpi-line"></div>
+            <div class="kpi-l">accuracy · gate at 90%</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-v mono" id="ov-esc">—</div>
+            <div class="kpi-line"></div>
+            <div class="kpi-l">escalation recall</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-v mono" id="ov-cost">—</div>
+            <div class="kpi-line"></div>
+            <div class="kpi-l">avg $ / case</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-v mono" id="ov-p95">—</div>
+            <div class="kpi-line"></div>
+            <div class="kpi-l">p95 latency</div>
+          </div>
+        </div>
+        <div class="nav-chips">
+          <button class="chip-nav" data-goto="1">start tour →</button>
+          <button class="chip-nav" data-goto-overview>workshop view</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ZONE 02 · AGENTS ============ -->
+    <section class="zone" data-zone-idx="1" data-zone-id="agents" data-x="1300" data-y="0" data-w="1100" data-h="760">
+      <div class="zone-wallpaper">
+        <div class="wall-num">02</div>
+        <div class="wall-title">Agents</div>
+        <div class="wall-sub">chord · ridgeline</div>
+      </div>
+
+      <div class="zone-detail zone-agents" data-hover="">
+        <header class="z-head">
+          <div class="eyebrow">02 · the four roles</div>
+          <h2 class="z-title">Watch a dispute travel through the graph.</h2>
+          <p class="z-sub">
+            Pick a scenario. A labeled message follows the same path your dispute would — from
+            intake at the Communicator, through the Planner and Evaluator, to the Explainer — or,
+            if the guardrail catches it, straight to the human queue.
+          </p>
+        </header>
+
+        <div class="scenario-picker" id="scenario-picker">
+          <button class="scenario" data-scenario="fraud_small">
+            <span class="s-num mono">A</span>
+            <div class="s-body">
+              <div class="s-title">Small fraud</div>
+              <div class="s-desc">$29 · auto_refund path</div>
+            </div>
+          </button>
+          <button class="scenario" data-scenario="fraud_big">
+            <span class="s-num mono">B</span>
+            <div class="s-body">
+              <div class="s-title">Big fraud</div>
+              <div class="s-desc">$842 · escalates to human</div>
+            </div>
+          </button>
+          <button class="scenario" data-scenario="remorse">
+            <span class="s-num mono">C</span>
+            <div class="s-body">
+              <div class="s-title">Buyer's remorse</div>
+              <div class="s-desc">$89 · non-Reg-E · deny</div>
+            </div>
+          </button>
+          <button class="scenario" data-scenario="adversarial">
+            <span class="s-num mono">D</span>
+            <div class="s-body">
+              <div class="s-title">Prompt injection</div>
+              <div class="s-desc">guardrail catches at Communicator</div>
+            </div>
+          </button>
+        </div>
+
+        <div class="flow-stage">
+          <svg id="flow-svg" viewBox="0 -40 960 500" aria-label="Agent flow diagram"></svg>
+          <div class="flow-hint mono" id="flow-hint">pick a scenario above to trace a case</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ZONE 03 · PIPELINE ============ -->
+    <section class="zone" data-zone-idx="2" data-zone-id="pipeline" data-x="2600" data-y="0" data-w="1100" data-h="760">
+      <div class="zone-wallpaper">
+        <div class="wall-num">03</div>
+        <div class="wall-title">Pipeline</div>
+        <div class="wall-sub">deep trace · every hop</div>
+      </div>
+
+      <div class="zone-detail zone-pipeline">
+        <header class="z-head z-head-tight">
+          <div class="eyebrow">03 · pipeline trace</div>
+          <h2 class="z-title">Every step, in full.</h2>
+        </header>
+
+        <div class="p8-form">
+          <div class="p8-presets">
+            <button class="p8-preset" data-p8-preset="small_fraud">$24 fraud</button>
+            <button class="p8-preset" data-p8-preset="big_fraud">$842 fraud</button>
+            <button class="p8-preset" data-p8-preset="remorse">buyer's remorse</button>
+            <button class="p8-preset" data-p8-preset="injection">injection</button>
+          </div>
+          <div class="p8-form-row">
+            <textarea id="p8-message" rows="2" placeholder="I did not make this charge…">I did not make this $24.99 charge — I've never heard of this merchant.</textarea>
+          </div>
+          <div class="p8-form-row">
+            <div class="field-input-wrap p8-amount-wrap"><span class="field-prefix">$</span><input id="p8-amount" type="number" step="0.01" min="0.01" value="24.99" /></div>
+            <input id="p8-merchant" type="text" value="SketchyGadgets" placeholder="Merchant" />
+            <button class="btn btn-primary btn-sm" id="p8-submit"><span class="btn-label">Run agent</span></button>
+          </div>
+        </div>
+
+        <div class="p8-status-bar">
+          <span class="pf-run-dot" id="p8-dot"></span>
+          <span class="p8-phase mono" id="p8-phase">idle — fill the form and click Run agent</span>
+          <span class="mono dim" id="p8-timer"></span>
+        </div>
+
+        <div class="p8-pipeline" id="p8-pipeline" data-active="">
+          <div class="p8-rail">
+            <svg class="p8-rail-svg" viewBox="0 0 800 58" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+              <line x1="60" y1="26" x2="740" y2="26" class="p8-rail-track"/>
+              <line x1="60" y1="26" x2="60" y2="26" class="p8-rail-track-fill" id="p8-rail-fill"/>
+              <g class="p8-stations">
+                <g class="p8-station" data-idx="0" data-stage="communicator">
+                  <circle cx="60"  cy="26" r="5" class="p8-station-dot"/>
+                  <text x="60"  y="52" class="p8-station-label">01</text>
+                </g>
+                <g class="p8-station" data-idx="1" data-stage="planner">
+                  <circle cx="230" cy="26" r="5" class="p8-station-dot"/>
+                  <text x="230" y="52" class="p8-station-label">02</text>
+                </g>
+                <g class="p8-station" data-idx="2" data-stage="executor">
+                  <circle cx="400" cy="26" r="5" class="p8-station-dot"/>
+                  <text x="400" y="52" class="p8-station-label">03</text>
+                </g>
+                <g class="p8-station" data-idx="3" data-stage="evaluator">
+                  <circle cx="570" cy="26" r="5" class="p8-station-dot"/>
+                  <text x="570" y="52" class="p8-station-label">04</text>
+                </g>
+                <g class="p8-station" data-idx="4" data-stage="explainer">
+                  <circle cx="740" cy="26" r="5" class="p8-station-dot"/>
+                  <text x="740" y="52" class="p8-station-label">05</text>
+                </g>
+              </g>
+              <circle id="p8-rail-ring" cx="60" cy="26" r="5" class="p8-rail-ring"/>
+              <circle id="p8-rail-dot" cx="60" cy="26" r="4.5" class="p8-rail-dot"/>
+            </svg>
+          </div>
+
+          <article class="p8-stage" data-stage="communicator" data-status="idle" id="p8-stage-communicator">
+            <header class="p8-stage-head">
+              <span class="p8-stage-num mono">01</span>
+              <span class="p8-stage-name">communicator</span>
+              <span class="p8-stage-dots"></span>
+              <span class="p8-stage-summary mono" id="p8-sum-communicator"></span>
+              <span class="p8-stage-time mono" id="p8-time-communicator">—</span>
+              <span class="p8-stage-glyph" id="p8-glyph-communicator">○</span>
+            </header>
+            <div class="p8-stage-body" id="p8-body-communicator"></div>
+          </article>
+
+          <article class="p8-stage" data-stage="planner" data-status="idle" id="p8-stage-planner">
+            <header class="p8-stage-head">
+              <span class="p8-stage-num mono">02</span>
+              <span class="p8-stage-name">planner <span class="p8-stage-sub mono">+ RAG</span></span>
+              <span class="p8-stage-dots"></span>
+              <span class="p8-stage-summary mono" id="p8-sum-planner"></span>
+              <span class="p8-stage-time mono" id="p8-time-planner">—</span>
+              <span class="p8-stage-glyph" id="p8-glyph-planner">○</span>
+            </header>
+            <div class="p8-stage-body" id="p8-body-planner"></div>
+          </article>
+
+          <article class="p8-stage" data-stage="executor" data-status="idle" id="p8-stage-executor">
+            <header class="p8-stage-head">
+              <span class="p8-stage-num mono">03</span>
+              <span class="p8-stage-name">executor</span>
+              <span class="p8-stage-dots"></span>
+              <span class="p8-stage-summary mono" id="p8-sum-executor"></span>
+              <span class="p8-stage-time mono" id="p8-time-executor">—</span>
+              <span class="p8-stage-glyph" id="p8-glyph-executor">○</span>
+            </header>
+            <div class="p8-stage-body" id="p8-body-executor"></div>
+          </article>
+
+          <article class="p8-stage" data-stage="evaluator" data-status="idle" id="p8-stage-evaluator">
+            <header class="p8-stage-head">
+              <span class="p8-stage-num mono">04</span>
+              <span class="p8-stage-name">evaluator</span>
+              <span class="p8-stage-dots"></span>
+              <span class="p8-stage-summary mono" id="p8-sum-evaluator"></span>
+              <span class="p8-stage-time mono" id="p8-time-evaluator">—</span>
+              <span class="p8-stage-glyph" id="p8-glyph-evaluator">○</span>
+            </header>
+            <div class="p8-stage-body" id="p8-body-evaluator"></div>
+          </article>
+
+          <article class="p8-stage" data-stage="explainer" data-status="idle" id="p8-stage-explainer">
+            <header class="p8-stage-head">
+              <span class="p8-stage-num mono">05</span>
+              <span class="p8-stage-name">explainer</span>
+              <span class="p8-stage-dots"></span>
+              <span class="p8-stage-summary mono" id="p8-sum-explainer"></span>
+              <span class="p8-stage-time mono" id="p8-time-explainer">—</span>
+              <span class="p8-stage-glyph" id="p8-glyph-explainer">○</span>
+            </header>
+            <div class="p8-stage-body" id="p8-body-explainer"></div>
+          </article>
+        </div>
+      </div>
+    </section>
+    <!-- ============ ZONE 04 · GATE ============ -->
+    <section class="zone" data-zone-idx="3" data-zone-id="gate" data-x="3900" data-y="0" data-w="1100" data-h="760">
+      <div class="zone-wallpaper">
+        <div class="wall-num">04</div>
+        <div class="wall-title">Gate</div>
+        <div class="wall-sub">kinetic · waffle</div>
+      </div>
+
+      <div class="zone-detail zone-gate">
+        <header class="z-head">
+          <div class="eyebrow">04 · deployment gate</div>
+        </header>
+
+        <!-- Row 1: Accuracy headline with sparkline -->
+        <div class="gate-row gate-hero-row">
+          <div class="gate-hero">
+            <div class="gate-num" id="k-num">0%</div>
+            <div class="gate-hero-meta mono">
+              <div class="mono dim">/ 90% gate</div>
+              <div class="gate-delta mono" id="k-delta">—</div>
+            </div>
+          </div>
+          <div class="gate-sparkline-wrap">
+            <svg class="gate-sparkline" id="k-sparkline" viewBox="0 0 280 64"></svg>
+            <div class="gate-sparkline-label mono">18 cases · pass/fail</div>
+          </div>
+        </div>
+
+        <!-- Row 2: Scrubbable HITL threshold -->
+        <div class="gate-row gate-scrub-row">
+          <div class="gate-row-head">
+            <div class="subheading">HITL threshold <span class="dim">· drag to reclassify</span></div>
+            <div class="tau-val mono" id="tau-val">τ = 0.50</div>
+          </div>
+          <svg id="threshold-svg" class="threshold-svg" viewBox="0 0 820 110" aria-label="Scrubbable threshold"></svg>
+          <div class="gate-row-foot">
+            <div class="tau-stat">
+              <div class="tau-stat-v mono" id="tau-accuracy">—</div>
+              <div class="tau-stat-l mono">effective accuracy</div>
+            </div>
+            <div class="tau-stat">
+              <div class="tau-stat-v mono" id="tau-hitl-count">—</div>
+              <div class="tau-stat-l mono">escalated to human</div>
+            </div>
+            <div class="tau-stat">
+              <div class="tau-stat-v mono" id="tau-gate-status">—</div>
+              <div class="tau-stat-l mono">gate</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 3: Tufte bullet graphs -->
+        <div class="gate-row gate-bullets-row">
+          <div class="bullet" data-bullet="p95">
+            <div class="bullet-head">
+              <span class="bullet-label mono">p95 latency</span>
+              <span class="bullet-val mono" id="bullet-p95-val">—</span>
+            </div>
+            <svg class="bullet-svg" id="bullet-p95" viewBox="0 0 280 20"></svg>
+          </div>
+          <div class="bullet" data-bullet="cost">
+            <div class="bullet-head">
+              <span class="bullet-label mono">$ / case</span>
+              <span class="bullet-val mono" id="bullet-cost-val">—</span>
+            </div>
+            <svg class="bullet-svg" id="bullet-cost" viewBox="0 0 280 20"></svg>
+          </div>
+          <div class="bullet" data-bullet="esc">
+            <div class="bullet-head">
+              <span class="bullet-label mono">escalation recall</span>
+              <span class="bullet-val mono" id="bullet-esc-val">—</span>
+            </div>
+            <svg class="bullet-svg" id="bullet-esc" viewBox="0 0 280 20"></svg>
+          </div>
+        </div>
+
+        <div class="verdict-card" id="verdict-card">
+          <div class="verdict-title mono" id="verdict-text">—</div>
+          <div class="verdict-detail" id="verdict-detail">—</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ZONE 05 · CASES ============ -->
+    <section class="zone" data-zone-idx="4" data-zone-id="cases" data-x="5200" data-y="0" data-w="1100" data-h="760">
+      <div class="zone-wallpaper">
+        <div class="wall-num">05</div>
+        <div class="wall-title">Cases</div>
+        <div class="wall-sub">beeswarm · 18 × latency</div>
+      </div>
+
+      <div class="zone-detail zone-cases">
+        <header class="z-head">
+          <div class="eyebrow">05 · per-case</div>
+          <h2 class="z-title">Eighteen real runs.</h2>
+          <p class="z-sub">
+            Each dot is one case. Horizontal axis is how long it took; vertical axis is the dollar amount
+            in dispute. Color is the action the agent took. Hollow dots failed the deployment gate.
+            Hover any dot to read the case.
+          </p>
+        </header>
+
+        <div class="scatter-wrap">
+          <svg id="scatter-svg" viewBox="0 0 900 400" aria-label="Cases scatter plot"></svg>
+          <div class="scatter-legend mono">
+            <div class="sl-row"><span class="sl-dot" style="background:#3730a3"></span>auto_refund</div>
+            <div class="sl-row"><span class="sl-dot" style="background:#b45309"></span>human_review</div>
+            <div class="sl-row"><span class="sl-dot" style="background:#57534e"></span>deny</div>
+            <div class="sl-sep"></div>
+            <div class="sl-row"><span class="sl-ring"></span>failed gate</div>
+          </div>
+        </div>
+
+        <div class="scatter-detail" id="scatter-detail" hidden>
+          <div class="sd-head">
+            <span class="sd-id mono" id="sd-id">—</span>
+            <div class="sd-chips" id="sd-chips"></div>
+          </div>
+          <blockquote class="sd-msg" id="sd-msg">—</blockquote>
+          <div class="sd-agent-label mono">agent response</div>
+          <div class="sd-agent" id="sd-agent">—</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ZONE 06 · ROLLBACK ============ -->
+    <section class="zone" data-zone-idx="5" data-zone-id="rollback" data-x="0" data-y="900" data-w="1100" data-h="760">
+      <div class="zone-wallpaper">
+        <div class="wall-num">06</div>
+        <div class="wall-title">Rollback</div>
+        <div class="wall-sub">slopegraph · divergence</div>
+      </div>
+
+      <div class="zone-detail zone-rollback">
+        <header class="z-head">
+          <div class="eyebrow">06 · guardrail</div>
+          <h2 class="z-title">The agent refused to send the bad draft.</h2>
+          <p class="z-sub">
+            Same dispute, same input. Second run: we strip the Reg&nbsp;E phrases from the Explainer's
+            output — simulating a post-processor regression. The agent's own post-check catches it at
+            the <em>draft</em> stage and routes to human review instead of shipping a non-compliant
+            message.
+          </p>
+        </header>
+
+        <div class="rb-actions">
+          <button class="btn btn-primary btn-sm" id="rb-play">▸ Play</button>
+          <button class="btn btn-ghost btn-sm" id="rb-play-live">Run real API</button>
+          <button class="btn btn-ghost btn-sm" id="rb-reset">↺ Reset</button>
+          <span class="mono dim rb-state" id="rb-state">idle</span>
+        </div>
+
+        <div class="typewriter-pair">
+          <div class="ms-page ms-page-clean" id="ms-clean">
+            <div class="ms-head">
+              <span class="rb-badge rb-badge-a mono">Exhibit&nbsp;A</span>
+              <span class="ms-title">clean draft</span>
+              <span class="ms-caret mono" id="ms-clean-caret"></span>
+            </div>
+            <div class="ms-body" id="ms-clean-body"></div>
+            <div class="ms-stamp ms-stamp-ship" id="ms-clean-stamp" hidden>
+              <span class="stamp-inner">SHIPPED</span>
+              <span class="stamp-sub mono">auto_refund · $24.99</span>
+            </div>
+          </div>
+
+          <div class="ms-page ms-page-tampered" id="ms-tampered">
+            <div class="ms-head">
+              <span class="rb-badge rb-badge-b mono">Exhibit&nbsp;B</span>
+              <span class="ms-title">tampered · Reg&nbsp;E phrases stripped</span>
+              <span class="ms-caret mono" id="ms-tamp-caret"></span>
+            </div>
+            <div class="ms-body" id="ms-tamp-body"></div>
+            <div class="ms-stamp ms-stamp-blocked" id="ms-tampered-stamp" hidden>
+              <span class="stamp-inner">BLOCKED</span>
+              <span class="stamp-sub mono">non-compliant · rolled back</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hitl-envelope" id="hitl-envelope" hidden>
+          <div class="he-arrow"></div>
+          <div class="he-card">
+            <div class="he-head mono">↳ human review queue</div>
+            <div class="he-body">
+              Case paused · a specialist will reach out within 45 business days.
+              <span class="dim"> Never sent to the customer.</span>
+            </div>
+          </div>
+        </div>
+
+        <p class="rb-caption">
+          <em>The guardrail read its own draft, flagged three missing Reg&nbsp;E phrases, and handed
+          the case to a human.</em>
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ ZONE 07 · HARNESS ============ -->
+    <section class="zone" data-zone-idx="6" data-zone-id="harness" data-x="1300" data-y="900" data-w="1100" data-h="760">
+      <div class="zone-wallpaper">
+        <div class="wall-num">07</div>
+        <div class="wall-title">Harness</div>
+        <div class="wall-sub">six layers</div>
+      </div>
+
+      <div class="zone-detail zone-harness">
+        <header class="z-head">
+          <div class="eyebrow">07 · agent = model + harness</div>
+          <h2 class="z-title">The model is 10% of the agent.</h2>
+          <p class="z-sub">
+            The other 90% lives in these six files — context, tools, orchestration, memory, evaluation,
+            guardrails. Hover a stratum to inspect the code.
+          </p>
+        </header>
+        <div class="harness-stack-wrap">
+          <svg id="harness-iso" viewBox="0 0 1060 540" aria-label="Harness strata — cross-section"></svg>
+        </div>
+      </div>
+    </section>
+    <!-- ============ ZONE 09 · ENSEMBLE ============ -->
+    <section class="zone" data-zone-idx="8" data-zone-id="ensemble" data-x="3900" data-y="900" data-w="1100" data-h="760">
+      <div class="zone-wallpaper">
+        <div class="wall-num">09</div>
+        <div class="wall-title">Ensemble</div>
+        <div class="wall-sub">escalate-on-any · 3 parallel planners</div>
+      </div>
+
+      <div class="zone-detail zone-ensemble">
+        <header class="z-head">
+          <div class="eyebrow">09 · ensemble planner</div>
+          <h2 class="z-title">If any agent hesitates, escalate.</h2>
+          <p class="z-sub">
+            Three planner instances run in parallel. If <em>any</em> vote lands on
+            human_review — or fails to respond — the final action is locked to human
+            review. Consensus is required for automated resolution.
+          </p>
+        </header>
+
+        <!-- scenario picker -->
+        <div class="ens-controls">
+          <button class="ens-scenario active" data-scenario="safe">all agree · auto_refund</button>
+          <button class="ens-scenario" data-scenario="one_doubts">one hesitates · human_review</button>
+          <button class="ens-scenario" data-scenario="one_fails">one errors · human_review</button>
+          <button class="ens-scenario" data-scenario="deny">clear deny</button>
+          <button class="btn btn-primary btn-sm" id="ens-run">▸ Simulate</button>
+        </div>
+
+        <!-- shared dispute prompt fed to all three planners -->
+        <div class="ens-prompt" id="ens-prompt">
+          <span class="ens-prompt-label mono">shared input</span>
+          <span class="ens-prompt-text" id="ens-prompt-text">—</span>
+        </div>
+
+        <!-- three vote lanes + SVG merge overlay -->
+        <div class="ens-arena">
+          <!-- Top tee fan-out only. ViewBox 900×80 matches the SVG's fixed
+               80px CSS height — no stretching, no bleed into the final card. -->
+          <svg class="ens-dag" id="ens-dag" viewBox="0 0 900 80" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <filter id="ink-bleed" x="-10%" y="-10%" width="120%" height="120%">
+                <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="3"/>
+                <feDisplacementMap in="SourceGraphic" scale="1.2"/>
+              </filter>
+            </defs>
+            <!-- Top tee: single centerline feeds three lanes -->
+            <g class="ens-tee">
+              <path id="ens-tee-0" class="ens-tee-line" d="M 450 12 C 450 40 150 40 150 80"/>
+              <path id="ens-tee-1" class="ens-tee-line" d="M 450 12 C 450 60 450 60 450 80"/>
+              <path id="ens-tee-2" class="ens-tee-line" d="M 450 12 C 450 40 750 40 750 80"/>
+            </g>
+            <!-- Basin paths removed: gate pill + final-action card communicate
+                 merge clearly; path lines were bleeding into the result. -->
+            <g class="ens-basin">
+              <path id="ens-basin-0" class="ens-basin-line" data-lane="0" d="M 0 0"/>
+              <path id="ens-basin-1" class="ens-basin-line" data-lane="1" d="M 0 0"/>
+              <path id="ens-basin-2" class="ens-basin-line" data-lane="2" d="M 0 0"/>
+            </g>
+            <!-- Animated token dots live here -->
+            <g id="ens-tokens" class="ens-tokens"></g>
+          </svg>
+
+          <div class="ens-lanes">
+            <!-- metronome sweep line — only within lane area, not beyond -->
+            <div class="ens-metronome" id="ens-metronome"></div>
+            <div class="ens-lane" data-lane="0">
+              <div class="ens-lane-head">
+                <span class="ens-lane-label mono">planner · 1</span>
+                <svg class="ens-gauge" id="ens-gauge-0" viewBox="0 0 28 16" preserveAspectRatio="xMidYMid meet">
+                  <path class="ens-gauge-bg" d="M 3 13 A 10 10 0 0 1 25 13" />
+                  <path class="ens-gauge-fg" d="M 3 13 A 10 10 0 0 1 25 13" />
+                  <circle class="ens-gauge-needle-dot" cx="14" cy="13" r="1"/>
+                </svg>
+                <span class="ens-lane-dot" id="ens-dot-0"></span>
+              </div>
+              <div class="ens-lane-draft mono" id="ens-draft-0"></div>
+              <svg class="ens-sparkline" id="ens-spark-0" viewBox="0 0 80 20" preserveAspectRatio="none">
+                <polyline class="ens-spark-line" points=""/>
+              </svg>
+              <div class="ens-vote-box" id="ens-vote-0">—</div>
+            </div>
+            <div class="ens-lane" data-lane="1">
+              <div class="ens-lane-head">
+                <span class="ens-lane-label mono">planner · 2</span>
+                <svg class="ens-gauge" id="ens-gauge-1" viewBox="0 0 28 16" preserveAspectRatio="xMidYMid meet">
+                  <path class="ens-gauge-bg" d="M 3 13 A 10 10 0 0 1 25 13" />
+                  <path class="ens-gauge-fg" d="M 3 13 A 10 10 0 0 1 25 13" />
+                  <circle class="ens-gauge-needle-dot" cx="14" cy="13" r="1"/>
+                </svg>
+                <span class="ens-lane-dot" id="ens-dot-1"></span>
+              </div>
+              <div class="ens-lane-draft mono" id="ens-draft-1"></div>
+              <svg class="ens-sparkline" id="ens-spark-1" viewBox="0 0 80 20" preserveAspectRatio="none">
+                <polyline class="ens-spark-line" points=""/>
+              </svg>
+              <div class="ens-vote-box" id="ens-vote-1">—</div>
+            </div>
+            <div class="ens-lane" data-lane="2">
+              <div class="ens-lane-head">
+                <span class="ens-lane-label mono">planner · 3</span>
+                <svg class="ens-gauge" id="ens-gauge-2" viewBox="0 0 28 16" preserveAspectRatio="xMidYMid meet">
+                  <path class="ens-gauge-bg" d="M 3 13 A 10 10 0 0 1 25 13" />
+                  <path class="ens-gauge-fg" d="M 3 13 A 10 10 0 0 1 25 13" />
+                  <circle class="ens-gauge-needle-dot" cx="14" cy="13" r="1"/>
+                </svg>
+                <span class="ens-lane-dot" id="ens-dot-2"></span>
+              </div>
+              <div class="ens-lane-draft mono" id="ens-draft-2"></div>
+              <svg class="ens-sparkline" id="ens-spark-2" viewBox="0 0 80 20" preserveAspectRatio="none">
+                <polyline class="ens-spark-line" points=""/>
+              </svg>
+              <div class="ens-vote-box" id="ens-vote-2">—</div>
+            </div>
+          </div>
+
+          <!-- merge gate (thin label between lanes and result) -->
+          <div class="ens-gate" id="ens-gate">
+            <div class="ens-gate-rule"></div>
+            <div class="ens-gate-node mono">escalate-on-any</div>
+            <div class="ens-gate-rule"></div>
+          </div>
+
+          <!-- final locked action -->
+          <div class="ens-result" id="ens-result">
+            <div class="ens-result-label mono">final action</div>
+            <div class="ens-result-action" id="ens-result-action">—</div>
+            <div class="ens-result-reason" id="ens-result-reason"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ZONE 08 · ABLATION ============ -->
+    <section class="zone" data-zone-idx="7" data-zone-id="ablation" data-x="2600" data-y="900" data-w="1100" data-h="760">
+      <div class="zone-wallpaper">
+        <div class="wall-num">08</div>
+        <div class="wall-title">Ablation</div>
+        <div class="wall-sub">harness value · 30 cases</div>
+      </div>
+
+      <div class="zone-detail zone-ablation">
+        <header class="z-head">
+          <div class="eyebrow">08 · ablation study</div>
+          <h2 class="z-title">Each layer earns its place.</h2>
+          <p class="z-sub">
+            Seven configurations — six ablation variants plus ensemble planner. 30 cases, OpenAI provider.
+            Raw model at the floor; full harness at the ceiling.
+          </p>
+        </header>
+
+        <div class="abl-legend">
+          <span class="abl-swatch" style="background:#3730a3"></span><span class="abl-lbl">Pass Rate</span>
+          <span class="abl-swatch" style="background:#818cf8"></span><span class="abl-lbl">Escalation Recall</span>
+          <span class="abl-swatch abl-swatch-full" style="background:#15803d"></span><span class="abl-lbl">Pass Rate (full harness)</span>
+          <span class="abl-swatch abl-swatch-full" style="background:#4ade80"></span><span class="abl-lbl">Escalation Recall (full harness)</span>
+        </div>
+
+        <div class="abl-chart-wrap">
+          <svg id="ablation-svg" viewBox="0 0 920 320" class="abl-svg" aria-label="Ablation study grouped bar chart"></svg>
+        </div>
+      </div>
+    </section>
+
+
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
 </body>
 </html>

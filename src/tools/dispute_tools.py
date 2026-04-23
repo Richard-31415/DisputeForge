@@ -14,9 +14,19 @@ from typing import Any
 from pydantic import BaseModel
 
 from harness.tools.base import tool
-from src.tools.nessie import _SYNTHETIC_PURCHASES
 
 log = logging.getLogger(__name__)
+
+_SYNTHETIC_PURCHASES: dict[str, list[dict[str, Any]]] = {
+    "acct-demo-001": [
+        {"_id": "txn-001", "amount": 29.99, "merchant_id": "mrch-netflix",
+         "purchase_date": "2026-04-10", "description": "Netflix subscription"},
+        {"_id": "txn-002", "amount": 842.17, "merchant_id": "mrch-unknown",
+         "purchase_date": "2026-04-14", "description": "Unknown online charge"},
+        {"_id": "txn-003", "amount": 12.50, "merchant_id": "mrch-starbucks",
+         "purchase_date": "2026-04-15", "description": "Starbucks #4821"},
+    ],
+}
 
 _MERCHANT_RISK: dict[str, dict[str, Any]] = {
     "SketchyGadgets LLC":  {"risk_tier": "high",   "fraud_rate_pct": 12.3, "known_disputes": 47},

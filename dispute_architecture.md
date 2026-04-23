@@ -163,10 +163,6 @@ All registered via `@tool(name, InputSchema)` → written to `harness.tools.base
 | **Degradation** | No `OPENAI_API_KEY` → returns `""` gracefully; planner uses inline rules |
 | **Pre-warm** | Dashboard server calls `retrieve_policy("Reg E error resolution unauthorized charge")` at startup |
 
-### `nessie.py` — Synthetic fixtures (offline)
-
-Holds `_SYNTHETIC_PURCHASES` dict used by `fetch_transaction`. HTTP client removed; all calls synthetic. Not dispatchable via `call()` (uses `register()` not `@tool`).
-
 ---
 
 ## 3. Harness layers  `harness/`

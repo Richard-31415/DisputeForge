@@ -527,90 +527,6 @@ wheels = [
 ]
 
 [[package]]
-name = "disputeforge"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "anthropic" },
-    { name = "httpx" },
-    { name = "jsonschema" },
-    { name = "langfuse" },
-    { name = "llama-index" },
-    { name = "llama-index-core" },
-    { name = "llama-index-embeddings-openai" },
-    { name = "llama-index-llms-anthropic" },
-    { name = "llama-parse" },
-    { name = "matplotlib" },
-    { name = "openai" },
-    { name = "pydantic" },
-    { name = "python-dotenv" },
-    { name = "requests" },
-    { name = "rich" },
-    { name = "tenacity" },
-]
-
-[package.optional-dependencies]
-claude-sdk = [
-    { name = "claude-agent-sdk" },
-    { name = "inspect-ai" },
-]
-dashboard = [
-    { name = "fastapi" },
-    { name = "sse-starlette" },
-    { name = "uvicorn", extra = ["standard"] },
-]
-dev = [
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "ruff" },
-]
-eval = [
-    { name = "deepeval" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-]
-langgraph = [
-    { name = "langchain-anthropic" },
-    { name = "langchain-core" },
-    { name = "langgraph" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "anthropic", specifier = ">=0.40.0" },
-    { name = "claude-agent-sdk", marker = "extra == 'claude-sdk'", specifier = ">=0.1.0" },
-    { name = "deepeval", marker = "extra == 'eval'", specifier = ">=1.5.0" },
-    { name = "fastapi", marker = "extra == 'dashboard'", specifier = ">=0.110.0" },
-    { name = "httpx", specifier = ">=0.27.0" },
-    { name = "inspect-ai", marker = "extra == 'claude-sdk'", specifier = ">=0.3.0" },
-    { name = "jsonschema", specifier = ">=4.20.0" },
-    { name = "langchain-anthropic", marker = "extra == 'langgraph'", specifier = ">=0.3.0" },
-    { name = "langchain-core", marker = "extra == 'langgraph'", specifier = ">=0.3.0" },
-    { name = "langfuse", specifier = ">=2.50.0" },
-    { name = "langgraph", marker = "extra == 'langgraph'", specifier = ">=0.2.50" },
-    { name = "llama-index", specifier = ">=0.12.0" },
-    { name = "llama-index-core", specifier = ">=0.12.0" },
-    { name = "llama-index-embeddings-openai", specifier = ">=0.3.0" },
-    { name = "llama-index-llms-anthropic", specifier = ">=0.6.0" },
-    { name = "llama-parse", specifier = ">=0.5.0" },
-    { name = "matplotlib", specifier = ">=3.10.8" },
-    { name = "openai", specifier = ">=1.50.0" },
-    { name = "pydantic", specifier = ">=2.8.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
-    { name = "pytest", marker = "extra == 'eval'", specifier = ">=8.0.0" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24.0" },
-    { name = "pytest-asyncio", marker = "extra == 'eval'", specifier = ">=0.24.0" },
-    { name = "python-dotenv", specifier = ">=1.0.0" },
-    { name = "requests", specifier = ">=2.32.0" },
-    { name = "rich", specifier = ">=13.0.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.7.0" },
-    { name = "sse-starlette", marker = "extra == 'dashboard'", specifier = ">=2.0.0" },
-    { name = "tenacity", specifier = ">=9.0.0" },
-    { name = "uvicorn", extras = ["standard"], marker = "extra == 'dashboard'", specifier = ">=0.27.0" },
-]
-provides-extras = ["langgraph", "claude-sdk", "eval", "dashboard", "dev"]
-
-[[package]]
 name = "colorama"
 version = "0.4.6"
 source = { registry = "https://pypi.org/simple" }
@@ -866,6 +782,88 @@ sdist = { url = "https://files.pythonhosted.org/packages/db/04/d24f6e645ad82ba0e
 wheels = [
     { url = "https://files.pythonhosted.org/packages/68/69/1bcf70f81de1b4a9f21b3a62ec0c83bdff991c88d6cc2267d02408457e88/dirtyjson-1.0.8-py3-none-any.whl", hash = "sha256:125e27248435a58acace26d5c2c4c11a1c0de0a9c5124c5a94ba78e517d74f53", size = 25197, upload-time = "2022-11-28T23:32:31.219Z" },
 ]
+
+[[package]]
+name = "disputeforge"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "anthropic" },
+    { name = "httpx" },
+    { name = "jsonschema" },
+    { name = "langchain-anthropic" },
+    { name = "langchain-core" },
+    { name = "langfuse" },
+    { name = "langgraph" },
+    { name = "llama-index" },
+    { name = "llama-index-core" },
+    { name = "llama-index-embeddings-openai" },
+    { name = "llama-index-llms-anthropic" },
+    { name = "llama-parse" },
+    { name = "matplotlib" },
+    { name = "openai" },
+    { name = "pydantic" },
+    { name = "python-dotenv" },
+    { name = "requests" },
+    { name = "rich" },
+    { name = "tenacity" },
+]
+
+[package.optional-dependencies]
+claude-sdk = [
+    { name = "claude-agent-sdk" },
+    { name = "inspect-ai" },
+]
+dashboard = [
+    { name = "fastapi" },
+    { name = "sse-starlette" },
+    { name = "uvicorn", extra = ["standard"] },
+]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "ruff" },
+]
+eval = [
+    { name = "deepeval" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "anthropic", specifier = ">=0.40.0" },
+    { name = "claude-agent-sdk", marker = "extra == 'claude-sdk'", specifier = ">=0.1.0" },
+    { name = "deepeval", marker = "extra == 'eval'", specifier = ">=1.5.0" },
+    { name = "fastapi", marker = "extra == 'dashboard'", specifier = ">=0.110.0" },
+    { name = "httpx", specifier = ">=0.27.0" },
+    { name = "inspect-ai", marker = "extra == 'claude-sdk'", specifier = ">=0.3.0" },
+    { name = "jsonschema", specifier = ">=4.20.0" },
+    { name = "langchain-anthropic", specifier = ">=0.3.0" },
+    { name = "langchain-core", specifier = ">=0.3.0" },
+    { name = "langfuse", specifier = ">=2.50.0" },
+    { name = "langgraph", specifier = ">=0.2.50" },
+    { name = "llama-index", specifier = ">=0.12.0" },
+    { name = "llama-index-core", specifier = ">=0.12.0" },
+    { name = "llama-index-embeddings-openai", specifier = ">=0.3.0" },
+    { name = "llama-index-llms-anthropic", specifier = ">=0.6.0" },
+    { name = "llama-parse", specifier = ">=0.5.0" },
+    { name = "matplotlib", specifier = ">=3.10.8" },
+    { name = "openai", specifier = ">=1.50.0" },
+    { name = "pydantic", specifier = ">=2.8.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
+    { name = "pytest", marker = "extra == 'eval'", specifier = ">=8.0.0" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24.0" },
+    { name = "pytest-asyncio", marker = "extra == 'eval'", specifier = ">=0.24.0" },
+    { name = "python-dotenv", specifier = ">=1.0.0" },
+    { name = "requests", specifier = ">=2.32.0" },
+    { name = "rich", specifier = ">=13.0.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.7.0" },
+    { name = "sse-starlette", marker = "extra == 'dashboard'", specifier = ">=2.0.0" },
+    { name = "tenacity", specifier = ">=9.0.0" },
+    { name = "uvicorn", extras = ["standard"], marker = "extra == 'dashboard'", specifier = ">=0.27.0" },
+]
+provides-extras = ["claude-sdk", "eval", "dashboard", "dev"]
 
 [[package]]
 name = "distro"

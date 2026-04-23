@@ -21,8 +21,6 @@ REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 RUNS_DIR = REPO_ROOT / "eval" / "runs"
 FIXTURES = REPO_ROOT / "eval" / "test_cases" / "disputes.jsonl"
 DATA_OUT = REPO_ROOT / "dashboard" / "data.js"
-# the quiet 2D alternate is served from /flat/ with its own copy of the same data
-DATA_OUT_FLAT = REPO_ROOT / "flat" / "data.js"
 
 
 def latest_run() -> pathlib.Path | None:
@@ -213,11 +211,8 @@ def main() -> int:
 
     DATA_OUT.parent.mkdir(parents=True, exist_ok=True)
     DATA_OUT.write_text(js)
-    DATA_OUT_FLAT.parent.mkdir(parents=True, exist_ok=True)
-    DATA_OUT_FLAT.write_text(js)
 
     print(f"Wrote {DATA_OUT.relative_to(REPO_ROOT)}")
-    print(f"Wrote {DATA_OUT_FLAT.relative_to(REPO_ROOT)}")
     if run:
         print(f"  from run: {run.relative_to(REPO_ROOT)}")
         print(f"  cases: {len(payload['cases'])}, accuracy: {payload['summary'].get('accuracy', 0):.1%}")
