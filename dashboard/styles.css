@@ -246,6 +246,7 @@ kbd {
 .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); }
 .dot.ok   { background: var(--pass); }
 .dot.bad  { background: var(--fail); }
+.dot.warn { background: #d97706; }
 
 /* bottom-left zone chrome */
 
@@ -282,7 +283,7 @@ kbd {
 .plane-content {
   position: absolute;
   top: 0; left: 0;
-  width: 5000px;
+  width: 7800px;
   height: 1700px;
   transform-origin: 0 0;
   transition: transform 750ms var(--ease-fly);
@@ -3940,3 +3941,356 @@ body[data-zoom-mode="zone"] .zone.current {
   color: var(--ink-2);
   text-align: center;
 }
+
+/* =================================================================
+   Zone 10: Problem & Ambition — editorial redesign
+   ================================================================= */
+
+.zone-problem { gap: 14px; }
+
+/* ---- Act 1 · Reg E timeline dial ---- */
+
+.prob-regdial {
+  padding: 10px 18px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-muted);
+  flex-shrink: 0;
+}
+.prob-regdial-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 2px;
+}
+.prob-regdial-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--ink-2);
+}
+.prob-regdial-today {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--umber);
+  font-variant-numeric: tabular-nums;
+}
+.prob-regdial-svg {
+  width: 100%;
+  height: 74px;
+  display: block;
+  overflow: visible;
+}
+.prob-regdial-axis {
+  stroke: var(--ink-4);
+  stroke-width: 1;
+}
+.prob-regdial-ticks line {
+  stroke: var(--ink-4);
+  stroke-width: 1;
+}
+.prob-regdial-ticks line.major { stroke: var(--ink-3); }
+.prob-regdial-ticks text {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  fill: var(--ink-3);
+  letter-spacing: 0.05em;
+}
+.prob-regdial-fill {
+  fill: var(--umber);
+  opacity: 0.9;
+}
+.prob-regdial-flagline { stroke: var(--ink-0); stroke-width: 1; }
+.prob-regdial-flagdot  { fill: var(--ink-0); }
+.prob-regdial-flaglabel {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  fill: var(--ink-0);
+}
+.prob-regdial-flag-10 .prob-regdial-flagdot { fill: var(--fail); }
+.prob-regdial-flag-10 .prob-regdial-flagline { stroke: var(--fail); }
+.prob-regdial-flag-10 .prob-regdial-flaglabel { fill: var(--fail); }
+
+/* pulsing pressure halo around day-10 flag */
+.prob-regdial-flag-10::after { content: none; }
+.prob-regdial-flag-10 .prob-regdial-flagdot {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: probDialPulse 2.4s var(--ease-std) infinite;
+}
+@keyframes probDialPulse {
+  0%   { r: 4; filter: drop-shadow(0 0 0 rgba(185,28,28,0)); }
+  45%  { r: 6; filter: drop-shadow(0 0 6px rgba(185,28,28,0.5)); }
+  100% { r: 4; filter: drop-shadow(0 0 0 rgba(185,28,28,0)); }
+}
+
+.prob-regdial-cursor-line { stroke: var(--ink-0); stroke-width: 1; stroke-dasharray: 2 3; }
+.prob-regdial-cursor-dot  { fill: var(--surface); stroke: var(--ink-0); stroke-width: 1.5; }
+
+/* ---- Act 2 · Cost gap ---- */
+
+.prob-gap {
+  padding: 12px 18px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+.prob-gap-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.prob-gap-side-eyebrow {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--ink-3);
+  margin-bottom: 3px;
+}
+.prob-gap-num {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 34px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+.prob-gap-manual .prob-gap-num { color: var(--fail); }
+.prob-gap-df     .prob-gap-num { color: var(--moss); }
+.prob-gap-df     { text-align: right; }
+.prob-gap-src {
+  font-size: 9.5px;
+  letter-spacing: 0.05em;
+  color: var(--ink-3);
+  margin-top: 4px;
+}
+.prob-gap-mult {
+  text-align: center;
+  padding: 6px 14px;
+  border: 1px solid var(--umber);
+  background: var(--umber-bg);
+  border-radius: 10px;
+  min-width: 92px;
+}
+.prob-gap-mult-v {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--umber);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.prob-gap-mult-l {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin-top: 4px;
+}
+
+.prob-gap-bar {
+  width: 100%;
+  height: 30px;
+  display: block;
+  overflow: visible;
+}
+.prob-gap-bar-track { fill: var(--ink-4); opacity: 0.5; }
+.prob-gap-bar-fill  { fill: var(--fail); opacity: 0.85; }
+.prob-gap-bar-df    { fill: var(--moss); stroke: var(--surface); stroke-width: 1.5; }
+.prob-gap-bar text  {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  fill: var(--ink-2);
+}
+.prob-gap-bar-t0 { fill: var(--moss); }
+.prob-gap-bar-t1 { fill: var(--fail); }
+
+/* ---- Act 3 · Risk ledger ---- */
+
+.prob-ledger {
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+.prob-ledger-head {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--ink-2);
+  margin-bottom: 8px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--border);
+}
+.prob-ledger-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 24px;
+}
+.prob-ledger-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 2px 0;
+}
+.prob-ledger-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  margin-top: 7px;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 3px var(--surface);
+}
+.prob-ledger-dot-red   { background: var(--fail); }
+.prob-ledger-dot-amber { background: var(--hitl); }
+.prob-ledger-text {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink-0);
+}
+.prob-ledger-text strong { font-weight: 600; }
+.prob-ledger-sub {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.03em;
+  color: var(--ink-3);
+  margin-top: 1px;
+}
+
+/* ---- Act 4 · Pull-quote ---- */
+
+.prob-quote {
+  position: relative;
+  margin: 0;
+  padding: 10px 24px 10px 52px;
+  border-left: 2px solid var(--umber);
+  background: var(--surface-muted);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.prob-quote-mark {
+  position: absolute;
+  left: 14px;
+  top: -6px;
+  font-family: var(--font-display);
+  font-size: 58px;
+  line-height: 1;
+  color: var(--umber);
+  opacity: 0.45;
+}
+.prob-quote-body {
+  margin: 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 17px;
+  line-height: 1.45;
+  color: var(--ink-0);
+  letter-spacing: -0.005em;
+}
+.prob-quote-body em {
+  font-style: italic;
+  color: var(--umber);
+  font-weight: 600;
+}
+.prob-quote-cap {
+  margin-top: 6px;
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* ---- See-also chip row ---- */
+
+.prob-refs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+.prob-ref-label {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-right: 4px;
+}
+
+/* =================================================================
+   Zone 10 — entrance choreography
+   Order: headline → dial → cost gap → ledger rows → pull-quote → refs
+   ================================================================= */
+
+/* headline */
+.zone-problem .z-head { opacity: 0; transform: translateY(6px);
+  transition: opacity 0.5s var(--ease-entrance), transform 0.5s var(--ease-entrance); }
+.zone.current[data-zone-id="problem"] .z-head { opacity: 1; transform: none; transition-delay: 0.05s; }
+
+/* dial container */
+.zone-problem .prob-regdial { opacity: 0; transform: translateY(8px);
+  transition: opacity 0.55s var(--ease-entrance), transform 0.55s var(--ease-entrance); }
+.zone.current[data-zone-id="problem"] .prob-regdial { opacity: 1; transform: none; transition-delay: 0.15s; }
+
+/* dial fill width is tweened directly by JS via setAttribute("width") */
+/* dial flags fade in after the fill catches up */
+.prob-regdial-flag { opacity: 0;
+  transition: opacity 0.35s var(--ease-entrance); }
+.prob-regdial-flag-10 { transition-delay: 0.85s; }
+.prob-regdial-flag-45 { transition-delay: 1.15s; }
+.prob-regdial-cursor  { opacity: 0;
+  transition: opacity 0.4s var(--ease-entrance) 0.55s; }
+.zone.current[data-zone-id="problem"] .prob-regdial-flag,
+.zone.current[data-zone-id="problem"] .prob-regdial-cursor { opacity: 1; }
+
+/* cost gap container */
+.zone-problem .prob-gap { opacity: 0; transform: translateY(10px);
+  transition: opacity 0.55s var(--ease-entrance), transform 0.55s var(--ease-entrance); }
+.zone.current[data-zone-id="problem"] .prob-gap { opacity: 1; transform: none; transition-delay: 0.45s; }
+
+/* cost gap bar — width tweened directly by JS via setAttribute("width") */
+/* multiplier pops in dramatically after bar is drawn */
+.prob-gap-mult {
+  opacity: 0;
+  transform: scale(0.72);
+  transition: opacity 0.45s var(--ease-entrance), transform 0.55s var(--ease-entrance);
+}
+.zone.current[data-zone-id="problem"] .prob-gap-mult { opacity: 1; transform: none; transition-delay: 1.5s; }
+
+/* ledger header + rows, streamed in */
+.zone-problem .prob-ledger-head { opacity: 0;
+  transition: opacity 0.4s var(--ease-entrance); }
+.zone.current[data-zone-id="problem"] .prob-ledger-head { opacity: 1; transition-delay: 1.6s; }
+
+.zone-problem .prob-ledger-row {
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: opacity 0.4s var(--ease-entrance), transform 0.4s var(--ease-entrance);
+  transition-delay: calc(1.7s + var(--i, 0) * 0.1s);
+}
+.zone.current[data-zone-id="problem"] .prob-ledger-row { opacity: 1; transform: none; }
+
+/* pull-quote — grows gently into place */
+.zone-problem .prob-quote {
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+  transition: opacity 0.55s var(--ease-entrance), transform 0.6s var(--ease-entrance);
+}
+.zone.current[data-zone-id="problem"] .prob-quote { opacity: 1; transform: none; transition-delay: 2.2s; }
+
+/* decorative quote mark drifts in slightly later */
+.zone-problem .prob-quote-mark {
+  opacity: 0; transform: translateY(6px) rotate(-8deg);
+  transition: opacity 0.55s var(--ease-entrance), transform 0.6s var(--ease-entrance);
+}
+.zone.current[data-zone-id="problem"] .prob-quote-mark {
+  opacity: 0.45; transform: none; transition-delay: 2.4s;
+}
+
+/* refs row — last to land */
+.zone-problem .prob-refs { opacity: 0;
+  transition: opacity 0.4s var(--ease-entrance) 2.7s; }
+.zone.current[data-zone-id="problem"] .prob-refs { opacity: 1; }

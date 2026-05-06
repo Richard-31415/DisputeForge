@@ -65,6 +65,8 @@ def _load_env() -> None:
 _load_env()
 
 
+_rag_ok: bool = False
+
 app = FastAPI(title="DisputeForge Dashboard", version="0.1.0")
 app.add_middleware(
     CORSMiddleware,
@@ -76,15 +78,26 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def _prewarm() -> None:
-    """Build the LlamaIndex RAG retriever at startup so the first dispute request is fast."""
-    import asyncio
+    """Fire-and-forget RAG prewarm — startup never blocks on LlamaIndex."""
+    if os.environ.get("NO_RAG"):
+        return
+    asyncio.create_task(_prewarm_bg())
+
+
+async def _prewarm_bg() -> None:
+    global _rag_ok
     import logging
     log = logging.getLogger("dashboard.prewarm")
     try:
         loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, _build_rag_index)
+        await asyncio.wait_for(loop.run_in_executor(None, _build_rag_index), timeout=30)
+        _rag_ok = True
         log.info("RAG index pre-warmed.")
+    except asyncio.TimeoutError:
+        _rag_ok = False
+        log.warning("RAG pre-warm timed out after 30s (non-fatal).")
     except Exception as e:
+        _rag_ok = False
         log.warning("RAG pre-warm failed (non-fatal): %s", e)
 
 
@@ -268,6 +281,7 @@ async def health():
     return {
         "ok": True,
         "has_anthropic_key": bool(os.environ.get("ANTHROPIC_API_KEY")),
+        "rag_available": _rag_ok,
         "ts": int(time.time() * 1000),
     }
 

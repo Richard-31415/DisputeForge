@@ -203,6 +203,7 @@
       overview: 'Overview', agents: 'Agents', pipeline: 'Pipeline',
       gate: 'Gate', cases: 'Cases', rollback: 'Rollback', harness: 'Harness',
       ablation: 'Ablation', ensemble: 'Ensemble',
+      problem: 'Problem & Ambition',
     })[z.id] || z.id;
     $('#chrome-counter').textContent = `${String(currentZoneIdx + 1).padStart(2, '0')} / ${String(ZONES.length).padStart(2, '0')}`;
   }
@@ -374,6 +375,7 @@
         overview: 'Overview', agents: 'Agents', live: 'Live Run',
         gate: 'Gate', cases: 'Cases', rollback: 'Rollback', harness: 'Harness',
         pipeline: 'Pipeline', ablation: 'Ablation', ensemble: 'Ensemble',
+        problem: 'Problem',
       })[z.id] || z.id;
       b.innerHTML = `<span class="mono">${String(i + 1).padStart(2, '0')}</span><span>${name}</span>`;
       b.addEventListener('click', () => enterZone(i));
@@ -413,6 +415,91 @@
     if (z.id === 'agents' && typeof chordReplay === 'function' && !window._skipAutoPlay) {
       setTimeout(() => chordReplay(), 400);  // after camera settles
     }
+    if (z.id === 'problem')   animateProblem();
+  }
+
+  let problemAnimated = false;
+  function animateProblem() {
+    if (problemAnimated) return;
+    problemAnimated = true;
+
+    // ---- Reg E dial: paint tick marks once ----
+    const ticksG = document.getElementById('prob-regdial-ticks');
+    if (ticksG && !ticksG.childNodes.length) {
+      const X0 = 40, X1 = 720, Y = 60;   // matches SVG viewBox 0 0 760 96
+      for (let d = 0; d <= 45; d++) {
+        const x = X0 + (d / 45) * (X1 - X0);
+        const major = d % 5 === 0;
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', x); line.setAttribute('x2', x);
+        line.setAttribute('y1', Y + 4);
+        line.setAttribute('y2', Y + (major ? 10 : 7));
+        if (major) line.setAttribute('class', 'major');
+        ticksG.appendChild(line);
+        if (major && (d % 5 === 0)) {
+          const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          t.setAttribute('x', x); t.setAttribute('y', Y + 22);
+          t.setAttribute('text-anchor', 'middle');
+          t.textContent = d;
+          ticksG.appendChild(t);
+        }
+      }
+    }
+
+    // camera-settle delay — then orchestrate the four acts
+    setTimeout(() => runProblemScript(), 200);
+  }
+
+  function runProblemScript() {
+    const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+
+    // Act 1: pressure band fills day 0 -> day 45 while the cursor slides
+    const fill = document.querySelector('.prob-regdial-fill');
+    const cursor = document.getElementById('prob-regdial-cursor');
+    const todayLabel = document.getElementById('prob-regdial-today');
+    const X0 = 40, X1 = 720, totalW = X1 - X0;
+    const dialStart = performance.now();
+    const dialDur   = 1100;
+    const dialStep = () => {
+      const t = Math.min(1, (performance.now() - dialStart) / dialDur);
+      const e = easeOutCubic(t);
+      if (fill)   fill.setAttribute('width', e * totalW);
+      if (cursor) cursor.setAttribute('transform', `translate(${X0 + e * totalW} 60)`);
+      if (todayLabel) todayLabel.textContent = `day ${Math.round(e * 45)}`;
+      if (t < 1) requestAnimationFrame(dialStep);
+      else if (todayLabel) todayLabel.textContent = 'day 45 · deadline';
+    };
+    requestAnimationFrame(dialStep);
+
+    // Act 2: cost-gap numbers + bar fill + multiplier (starts ~450ms in via CSS,
+    // but the ticker starts earlier to feel connected to the pressure band)
+    const manualEl = document.getElementById('prob-gap-manual');
+    const dfEl     = document.getElementById('prob-gap-df');
+    const multEl   = document.getElementById('prob-gap-mult');
+    const barFill  = document.getElementById('prob-gap-bar-fill');
+    const BAR_MAX  = 992;          // bar viewBox width minus DF dot radius padding
+    const gapStart = performance.now() + 500;   // align with CSS delay on .prob-gap
+    const gapDur   = 1200;
+    const gapStep = () => {
+      const now = performance.now();
+      if (now < gapStart) { requestAnimationFrame(gapStep); return; }
+      const t = Math.min(1, (now - gapStart) / gapDur);
+      const e = easeOutCubic(t);
+      const m = e * 37;
+      const d = Math.min(0.02, e * 0.02);
+      const mult = Math.round(e * 1850);
+      if (manualEl) manualEl.textContent = `$${m.toFixed(m >= 10 ? 0 : 1)}`;
+      if (dfEl)     dfEl.textContent     = `$${d.toFixed(2)}`;
+      if (multEl)   multEl.textContent   = `${mult.toLocaleString()}×`;
+      if (barFill)  barFill.setAttribute('width', e * BAR_MAX);
+      if (t < 1) requestAnimationFrame(gapStep);
+      else {
+        if (manualEl) manualEl.textContent = '$37';
+        if (dfEl)     dfEl.textContent     = '$0.02';
+        if (multEl)   multEl.textContent   = '1,850×';
+      }
+    };
+    requestAnimationFrame(gapStep);
   }
 
   // =================================================================
@@ -3212,10 +3299,18 @@
     try {
       const r = await fetch('/api/health');
       const j = await r.json();
-      dot.classList.remove('bad'); dot.classList.add('ok');
-      text.textContent = j.has_anthropic_key ? 'agent ready' : 'no api key';
+      if (!j.has_anthropic_key) {
+        dot.classList.remove('ok'); dot.classList.add('bad');
+        text.textContent = 'no api key';
+      } else if (!j.rag_available) {
+        dot.classList.remove('ok', 'bad'); dot.classList.add('warn');
+        text.textContent = 'agent ready · llama idx ↓';
+      } else {
+        dot.classList.remove('bad', 'warn'); dot.classList.add('ok');
+        text.textContent = 'agent ready';
+      }
     } catch {
-      dot.classList.remove('ok'); dot.classList.add('bad');
+      dot.classList.remove('ok', 'warn'); dot.classList.add('bad');
       text.textContent = 'server offline';
     }
   }
@@ -3724,6 +3819,16 @@
     return '';
   }
 
+  // Pick the best pre-recorded scenario to fall back to when the backend
+  // isn't reachable (e.g. when hosted as static files with no FastAPI).
+  function p8PickScenario({ msg = '', amt = 0 } = {}) {
+    const m = msg.toLowerCase();
+    if (/ignore\s+(previous|prior)|prompt|system\s+instruction|override/.test(m)) return 'injection';
+    if (/changed\s+my\s+mind|remorse|don'?t\s+want/.test(m)) return 'remorse';
+    if (amt > 500) return 'big_fraud';
+    return 'small_fraud';
+  }
+
   async function submitPipeline08() {
     if (p8Active) { toast('A run is already in flight.', 'bad'); return; }
     const msg = $('#p8-message')?.value.trim();
@@ -3745,12 +3850,28 @@
 
     let replanCount = 0;
     try {
-      const resp = await fetch('/api/dispute/stream', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_message: msg, amount: amt, merchant, category: 'online_retail' }),
-      });
-      if (!resp.ok) throw new Error('server ' + resp.status);
+      let resp;
+      try {
+        resp = await fetch('/api/dispute/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_message: msg, amount: amt, merchant, category: 'online_retail' }),
+        });
+      } catch (netErr) {
+        // Network error = no backend (static hosting). Gracefully fall back
+        // to the pre-recorded demo that best matches the form input.
+        resp = null;
+      }
+      if (!resp || !resp.ok) {
+        const scenario = p8PickScenario({ msg, amt });
+        p8SetStatus('pf-running', 'demo · ' + scenario + ' (offline)');
+        clearInterval(tick);
+        if (btn) btn.disabled = false;
+        if (lbl) lbl.textContent = 'Run agent';
+        p8Active = false;
+        await p8PlayDemo(scenario);
+        return;
+      }
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let buf = '';
@@ -4520,7 +4641,7 @@
       const hash = window.location.hash || '';
       const m = /^#zone-(\d{1,2})(?:\?(play|bubble|hover|sim|demo|active)=([a-z_]+))?$/.exec(hash);
       if (m) {
-        const idx = Math.max(0, Math.min(8, parseInt(m[1], 10) - 1));
+        const idx = Math.max(0, Math.min(9, parseInt(m[1], 10) - 1));
         enterZone(idx);
         if (m[2] === 'hover') {
           setTimeout(() => {
@@ -4626,7 +4747,7 @@
     const deco = document.getElementById('plane-deco');
     if (!deco) return;
 
-    const W = 5000, H = 1700;
+    const W = 7800, H = 1700;
     const major = 400;  // grid pitch
 
     // 1. Hairline grid (rendered once)
